@@ -50,7 +50,7 @@ def main(
         max_hr=max_hr,
     )
 
-    logger.info("Stide started...")
+    logger.info("Stride started...")
     app = create_fast_api_app(ctx)
     uvicorn.run(
         app,
