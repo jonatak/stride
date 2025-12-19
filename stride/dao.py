@@ -3,7 +3,7 @@ from datetime import date
 from influxdb import InfluxDBClient
 
 PACE_QUERY = """
-SELECT last("DurationSeconds") as duration_s, mean("HeartRate") as hr, last("Distance") as distance_m
+SELECT last("DurationSeconds") as duration_s, mean("HeartRate") as hr, last("Distance") as distance_m, last("Activity_ID") as activity_id
 FROM "ActivityGPS"
 WHERE
   time >= '{start}'
