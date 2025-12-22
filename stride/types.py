@@ -26,6 +26,7 @@ class PaceStats(BaseModel):
     period_start: date
     mn_per_km: str
     distance_km: int
+    count_activities: int
     z1_pct: float
     z2_pct: float
     z3_pct: float

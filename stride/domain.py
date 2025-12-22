@@ -1,5 +1,6 @@
 import math
 from datetime import date, datetime
+from typing import Literal
 
 import polars as pl
 
@@ -13,8 +14,6 @@ ZONE_PCTS: list[tuple[float, float]] = [
     (0.80, 0.90),
     (0.90, 1.00),
 ]
-
-GAP_S = 20 * 60  # 20 minutes
 
 
 def generate_hr_zone_infos(max_hr: int) -> HRInfos:
@@ -40,9 +39,16 @@ def generate_hr_zone_infos(max_hr: int) -> HRInfos:
     )
 
 
-def _format_individual_pace_stats(stat: dict) -> PaceStats:
-    period_start = stat["period_start"]
-    period_start = f"{period_start}-01"
+def _format_individual_pace_stats(
+    stat: dict, dimension: Literal["yearly", "monthly"]
+) -> PaceStats:
+    match dimension:
+        case "monthly":
+            period_start = stat["period_start"]
+            period_start = f"{period_start}-01"
+        case "yearly":
+            period_start = stat["period_start"]
+            period_start = f"{period_start}-01-01"
 
     s_per_km = int(round(stat["s_per_km"]))
     mn, s = divmod(s_per_km, 60)
@@ -57,17 +63,11 @@ def _format_individual_pace_stats(stat: dict) -> PaceStats:
         z3_pct=round(stat["z3_pct"], 2),
         z4_pct=round(stat["z4_pct"], 2),
         z5_pct=round(stat["z5_pct"], 2),
+        count_activities=stat["count_activities"],
     )
 
 
-def generate_pace_series_monthly(
-    ctx: AppContext, start: date, end: date
-) -> list[PaceStats]:
-    series = get_pace_series(ctx.influx_conn, start, end)
-    flatten_serie = [a for i in series for a in i]
-
-    df = pl.DataFrame(flatten_serie)
-
+def _prepare_columns_for_agg(ctx: AppContext, df: pl.DataFrame) -> pl.DataFrame:
     hr_info = generate_hr_zone_infos(ctx.max_hr)
 
     hr_expr: None | pl.Expr = None
@@ -81,13 +81,9 @@ def generate_pace_series_monthly(
     if hr_expr is None:
         raise Exception("unexpected none value for hr_info")
 
-    df = (
+    return (
         df.sort(pl.col("time"))
         .with_columns(
-            pl.col("time")
-            .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
-            .dt.strftime("%Y-%m")
-            .alias("period_start"),
             pl.col("duration_s")
             .diff()
             .over("activity_id")
@@ -110,7 +106,12 @@ def generate_pace_series_monthly(
             .otherwise(0)
             .alias("du_s"),
         )
-        .group_by(
+    )
+
+
+def _agg_dataframe(df: pl.DataFrame) -> pl.DataFrame:
+    return (
+        df.group_by(
             pl.col("period_start"),
             maintain_order=True,
         )
@@ -122,6 +123,7 @@ def generate_pace_series_monthly(
             pl.col("du_s").filter(pl.col("zone") == 3).sum().fill_null(0).alias("z3_s"),
             pl.col("du_s").filter(pl.col("zone") == 4).sum().fill_null(0).alias("z4_s"),
             pl.col("du_s").filter(pl.col("zone") == 5).sum().fill_null(0).alias("z5_s"),
+            pl.col("activity_id").n_unique().alias("count_activities"),
         )
         .with_columns(
             pl.sum_horizontal("z1_s", "z2_s", "z3_s", "z4_s", "z5_s").alias("total_s")
@@ -135,5 +137,43 @@ def generate_pace_series_monthly(
         )
         .drop(["z1_s", "z2_s", "z3_s", "z4_s", "z5_s", "total_s"])
     )
+
+
+def generate_pace_series_monthly(
+    ctx: AppContext, start: date, end: date
+) -> list[PaceStats]:
+    series = get_pace_series(ctx.influx_conn, start, end)
+    flatten_serie = [a for i in series for a in i]
+
+    df = pl.DataFrame(flatten_serie)
+    df = _prepare_columns_for_agg(ctx, df)
+
+    df = df.with_columns(
+        pl.col("time")
+        .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
+        .dt.strftime("%Y-%m")
+        .alias("period_start")
+    )
+    df = _agg_dataframe(df)
     result = df.to_dicts()
-    return [_format_individual_pace_stats(i) for i in result]
+    return [_format_individual_pace_stats(i, "monthly") for i in result]
+
+
+def generate_pace_info_yearly(ctx: AppContext, year: int) -> list[PaceStats]:
+    start = date(year, 1, 1)
+    end = date(year, 12, 31)
+    series = get_pace_series(ctx.influx_conn, start, end)
+    flatten_serie = [a for i in series for a in i]
+
+    df = pl.DataFrame(flatten_serie)
+    df = _prepare_columns_for_agg(ctx, df)
+
+    df = df.with_columns(
+        pl.col("time")
+        .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
+        .dt.strftime("%Y")
+        .alias("period_start")
+    )
+    df = _agg_dataframe(df)
+    result = df.to_dicts()
+    return [_format_individual_pace_stats(i, "yearly") for i in result]
