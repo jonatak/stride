@@ -12,6 +12,28 @@ WHERE
 GROUP BY time(1m), "ActivityID" fill(none)
 """
 
+ACTIVITIES_QUERY = """
+SELECT
+        "ActivityID" as activity_id,
+        "activityName" as activity_name,
+        "distance" as distance_m,
+        "elapsedDuration" as duration_s,
+        "averageSpeed" as avg_speed_m_per_s,
+        "averageHR" as avg_hr_bpm,
+        "maxHR" as max_hr_bpm,
+        "hrTimeInZone_1" as z1_s,
+        "hrTimeInZone_2" as z2_s,
+        "hrTimeInZone_3" as z3_s,
+        "hrTimeInZone_4" as z4_s,
+        "hrTimeInZone_5" as z5_s
+FROM "ActivitySummary"
+WHERE
+  time >= '{start}'
+  AND time <= '{end}'
+ AND "activityType" = 'running'
+ORDER BY time ASC
+"""
+
 
 def init_connection(
     host: str, port: int, user: str, password: str, db: str
@@ -30,5 +52,13 @@ def get_pace_series(conn: InfluxDBClient, start: date, end: date):
     start_str = start.strftime("%Y-%m-%d")
     end_str = end.strftime("%Y-%m-%d")
     query = PACE_QUERY.format(start=start_str, end=end_str)
+
+    return list(conn.query(query))
+
+
+def get_activities_series(conn: InfluxDBClient, start: date, end: date):
+    start_str = start.strftime("%Y-%m-%d")
+    end_str = end.strftime("%Y-%m-%d")
+    query = ACTIVITIES_QUERY.format(start=start_str, end=end_str)
 
     return list(conn.query(query))

@@ -4,8 +4,8 @@ from typing import Literal
 
 import polars as pl
 
-from stride.dao import get_pace_series
-from stride.types import AppContext, HRInfos, HRZone, PaceStats
+from stride.dao import get_activities_series, get_pace_series
+from stride.types import ActivityInfo, AppContext, HRInfos, HRZone, PaceStats, ZonePct
 
 ZONE_PCTS: list[tuple[float, float]] = [
     (0.50, 0.60),
@@ -58,11 +58,13 @@ def _format_individual_pace_stats(
         period_start=datetime.strptime(period_start, "%Y-%m-%d"),
         mn_per_km=mn_per_km,
         distance_km=int(round(stat["distance_km"])),
-        z1_pct=round(stat["z1_pct"], 2),
-        z2_pct=round(stat["z2_pct"], 2),
-        z3_pct=round(stat["z3_pct"], 2),
-        z4_pct=round(stat["z4_pct"], 2),
-        z5_pct=round(stat["z5_pct"], 2),
+        zones=ZonePct(
+            z1=round(stat["z1_pct"], 2),
+            z2=round(stat["z2_pct"], 2),
+            z3=round(stat["z3_pct"], 2),
+            z4=round(stat["z4_pct"], 2),
+            z5=round(stat["z5_pct"], 2),
+        ),
         count_activities=stat["count_activities"],
     )
 
@@ -177,3 +179,67 @@ def generate_pace_info_yearly(ctx: AppContext, year: int) -> list[PaceStats]:
     df = _agg_dataframe(df)
     result = df.to_dicts()
     return [_format_individual_pace_stats(i, "yearly") for i in result]
+
+
+def _format_individual_activity_info(info: dict) -> ActivityInfo:
+    s_per_km = int(round(info["pace_s_per_km"]))
+    mn, s = divmod(s_per_km, 60)
+    mn_per_km = f"{mn}:{s:02d}"
+
+    return ActivityInfo(
+        activity_id=info["activity_id"],
+        activity_name=info["activity_name"],
+        start=info["time"],
+        pace_mn_per_km=mn_per_km,
+        distance_m=int(round(info["distance_m"])),
+        duration_s=int(round(info["duration_s"])),
+        avg_hr_bpm=info["avg_hr_bpm"],
+        max_hr_bpm=info["max_hr_bpm"],
+        zones=ZonePct(
+            z1=round(info["z1_pct"], 2),
+            z2=round(info["z2_pct"], 2),
+            z3=round(info["z3_pct"], 2),
+            z4=round(info["z4_pct"], 2),
+            z5=round(info["z5_pct"], 2),
+        ),
+    )
+
+
+def generate_activities_infos(
+    ctx: AppContext, start: date, end: date
+) -> list[ActivityInfo]:
+    series = get_activities_series(ctx.influx_conn, start, end)
+    flatten_serie = [a for i in series for a in i]
+    df = pl.DataFrame(flatten_serie)
+    df = (
+        df.with_columns(
+            pl.col("time").str.to_datetime(strict=False, time_zone="UTC").alias("ts")
+        )
+        .sort(["activity_id", "ts"])
+        .unique(subset=["activity_id"], keep="last")
+        .with_columns(
+            pl.sum_horizontal("z1_s", "z2_s", "z3_s", "z4_s", "z5_s").alias("total_s")
+        )
+        .with_columns(
+            (pl.col("z1_s") / pl.col("total_s")).alias("z1_pct"),
+            (pl.col("z2_s") / pl.col("total_s")).alias("z2_pct"),
+            (pl.col("z3_s") / pl.col("total_s")).alias("z3_pct"),
+            (pl.col("z4_s") / pl.col("total_s")).alias("z4_pct"),
+            (pl.col("z5_s") / pl.col("total_s")).alias("z5_pct"),
+            (1000 / pl.col("avg_speed_m_per_s")).alias("pace_s_per_km"),
+        )
+        .drop(
+            [
+                "ts",
+                "z1_s",
+                "z2_s",
+                "z3_s",
+                "z4_s",
+                "z5_s",
+                "total_s",
+                "avg_speed_m_per_s",
+            ]
+        )
+    )
+    result = df.to_dicts()
+    return [_format_individual_activity_info(i) for i in result]

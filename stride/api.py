@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from stride import domain
-from stride.types import AppContext, HRInfos, PaceResponse
+from stride.types import ActivitiesResponse, AppContext, HRInfos, PaceResponse
 
 
 def get_router(ctx: AppContext) -> APIRouter:
@@ -25,6 +25,12 @@ def get_router(ctx: AppContext) -> APIRouter:
         year: Annotated[int, Path(title="The year of the summary", ge=2021, lt=2050)],
     ) -> PaceResponse:
         return PaceResponse(series=domain.generate_pace_info_yearly(ctx, year))
+
+    @router.get("/activities")
+    def activities(start: date, end: date) -> ActivitiesResponse:
+        return ActivitiesResponse(
+            series=domain.generate_activities_infos(ctx, start, end)
+        )
 
     return router
 
@@ -45,11 +51,22 @@ def get_ui_router(ctx: AppContext) -> APIRouter:
             end = date(year, 12, 31)
 
         return templates.TemplateResponse(
-            "index.html",
+            "progress.html",
             {
                 "request": request,
                 "start": start.isoformat(),
                 "end": end.isoformat(),
+                "active_page": "progress",
+            },
+        )
+
+    @router.get("/home", response_class=HTMLResponse)
+    def home_ui(request: Request):
+        return templates.TemplateResponse(
+            "home.html",
+            {
+                "request": request,
+                "active_page": "home",
             },
         )
 
