@@ -1,5 +1,6 @@
 import math
 from datetime import date, datetime
+from functools import partial
 from typing import Literal
 
 import polars as pl
@@ -168,15 +169,17 @@ def generate_pace_series_monthly(
     flatten_serie = [a for i in series for a in i]
 
     df = pl.DataFrame(flatten_serie)
-    df = _prepare_columns_for_agg(ctx, df)
 
-    df = df.with_columns(
-        pl.col("time")
-        .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
-        .dt.strftime("%Y-%m")
-        .alias("period_start")
+    df = (
+        df.pipe(partial(_prepare_columns_for_agg, ctx))
+        .with_columns(
+            pl.col("time")
+            .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
+            .dt.strftime("%Y-%m")
+            .alias("period_start")
+        )
+        .pipe(_agg_dataframe)
     )
-    df = _agg_dataframe(df)
     result = df.to_dicts()
     return [_format_individual_pace_stats(i, "monthly") for i in result]
 
@@ -188,15 +191,17 @@ def generate_pace_info_yearly(ctx: AppContext, year: int) -> list[PaceStats]:
     flatten_serie = [a for i in series for a in i]
 
     df = pl.DataFrame(flatten_serie)
-    df = _prepare_columns_for_agg(ctx, df)
 
-    df = df.with_columns(
-        pl.col("time")
-        .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
-        .dt.strftime("%Y")
-        .alias("period_start")
+    df = (
+        df.pipe(partial(_prepare_columns_for_agg, ctx))
+        .with_columns(
+            pl.col("time")
+            .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
+            .dt.strftime("%Y")
+            .alias("period_start")
+        )
+        .pipe(_agg_dataframe)
     )
-    df = _agg_dataframe(df)
     result = df.to_dicts()
     return [_format_individual_pace_stats(i, "yearly") for i in result]
 
