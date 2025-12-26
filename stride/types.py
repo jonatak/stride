@@ -43,7 +43,7 @@ class PaceResponse(BaseModel):
 
 
 class ActivityInfo(BaseModel):
-    activity_id: str
+    activity_id: int
     activity_name: str
     distance_m: float
     duration_s: float
@@ -57,3 +57,21 @@ class ActivityInfo(BaseModel):
 
 class ActivitiesResponse(BaseModel):
     series: list[ActivityInfo]
+
+
+class ActivityInfoResponse(BaseModel):
+    activity: ActivityInfo | None = None
+
+
+class ActivityPoint(BaseModel):
+    distance_m: float | None = None
+    duration_s: float | None = None
+    hr: float | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    altitude: float | None = None
+    pace_mn_per_km: str | None = None
+
+
+class ActivityDetailsResponse(BaseModel):
+    series: list[ActivityPoint]

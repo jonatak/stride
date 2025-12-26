@@ -31,7 +31,43 @@ WHERE
   time >= '{start}'
   AND time <= '{end}'
  AND "activityType" = 'running'
-ORDER BY time ASC
+ORDER BY time DESC
+"""
+
+ACTIVITY_DETAILS_QUERY = """
+SELECT
+    last("DurationSeconds") as duration_s,
+    mean("HeartRate") as hr,
+    last("Distance") as distance_m,
+    mean("Altitude") as altitude,
+    mean("Cadence") as cadence,
+    last("Latitude") as latitude,
+    last("Longitude") as longitude
+FROM "ActivityGPS"
+WHERE
+    "Activity_ID" = {activity_id}
+GROUP BY time(30s), "Activity_ID" fill(none)
+"""
+
+ACTIVITY_INFO_QUERY = """
+SELECT
+        "ActivityID" as activity_id,
+        "activityName" as activity_name,
+        "distance" as distance_m,
+        "elapsedDuration" as duration_s,
+        "averageSpeed" as avg_speed_m_per_s,
+        "averageHR" as avg_hr_bpm,
+        "maxHR" as max_hr_bpm,
+        "hrTimeInZone_1" as z1_s,
+        "hrTimeInZone_2" as z2_s,
+        "hrTimeInZone_3" as z3_s,
+        "hrTimeInZone_4" as z4_s,
+        "hrTimeInZone_5" as z5_s,
+        time
+FROM "ActivitySummary"
+WHERE
+  "Activity_ID" = {activity_id}
+LIMIT 1
 """
 
 
@@ -61,4 +97,14 @@ def get_activities_series(conn: InfluxDBClient, start: date, end: date):
     end_str = end.strftime("%Y-%m-%d")
     query = ACTIVITIES_QUERY.format(start=start_str, end=end_str)
 
+    return list(conn.query(query))
+
+
+def get_activity_details_series(conn: InfluxDBClient, activity_id: int):
+    query = ACTIVITY_DETAILS_QUERY.format(activity_id=activity_id)
+    return list(conn.query(query))
+
+
+def get_activity_info(conn: InfluxDBClient, activity_id: int):
+    query = ACTIVITY_INFO_QUERY.format(activity_id=activity_id)
     return list(conn.query(query))

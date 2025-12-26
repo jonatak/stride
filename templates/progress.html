@@ -194,6 +194,18 @@
           mode: "index",
           intersect: false
         },
+        onClick: (_, elements) => {
+          if (!elements || elements.length === 0) return;
+          const idx = elements[0].index;
+          const label = labels[idx];
+          if (!label) return;
+          const start = new Date(label);
+          if (isNaN(start.getTime())) return;
+          const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+          const startStr = start.toISOString().slice(0, 10);
+          const endStr = end.toISOString().slice(0, 10);
+          window.location.href = `/ui/activities?start=${encodeURIComponent(startStr)}&end=${encodeURIComponent(endStr)}`;
+        },
         scales: {
           y: {
             beginAtZero: false,
@@ -284,6 +296,18 @@
       options: {
         responsive: true,
         interaction: { mode: "index", intersect: false },
+        onClick: (_, elements) => {
+          if (!elements || elements.length === 0) return;
+          const idx = elements[0].index;
+          const label = labels[idx];
+          if (!label) return;
+          const start = new Date(label);
+          if (isNaN(start.getTime())) return;
+          const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+          const startStr = start.toISOString().slice(0, 10);
+          const endStr = end.toISOString().slice(0, 10);
+          window.location.href = `/ui/activities?start=${encodeURIComponent(startStr)}&end=${encodeURIComponent(endStr)}`;
+        },
         scales: {
           x: { stacked: true },
           yMinutes: {

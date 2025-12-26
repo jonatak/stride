@@ -8,22 +8,35 @@
   .stat-card {
     min-width: 150px;
   }
+
   .stat-value {
     white-space: nowrap;
   }
+
   .activity-card {
     margin-bottom: 0.75rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border-radius: 12px;
   }
-  .intensity-low { border-left: 6px solid #2ecc71; }
-  .intensity-med { border-left: 6px solid #f1c40f; }
-  .intensity-high { border-left: 6px solid #e74c3c; }
+
+  .intensity-low {
+    border-left: 6px solid #2ecc71;
+  }
+
+  .intensity-med {
+    border-left: 6px solid #f1c40f;
+  }
+
+  .intensity-high {
+    border-left: 6px solid #e74c3c;
+  }
+
   .activity-metrics {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
+
   .pill {
     display: inline-flex;
     align-items: center;
@@ -32,11 +45,27 @@
     font-weight: 600;
     font-size: 0.95rem;
   }
-  .pill-distance { background: rgba(78, 115, 223, 0.14); color: #1f2c6d; }
-  .pill-duration { background: rgba(54, 54, 54, 0.12); color: #1f1f1f; }
-  .pill-pace { background: rgba(78, 115, 223, 0.14); color: #1f2c6d; }
-  .pill-hr { background: rgba(241, 196, 15, 0.18); color: #8c7200; }
-  .pill-hr-max { background: rgba(231, 76, 60, 0.15); color: #b0392e; }
+
+  .pill-distance {
+    background: rgba(78, 115, 223, 0.14);
+    color: #1f2c6d;
+  }
+
+  .pill-duration {
+    background: rgba(54, 54, 54, 0.12);
+    color: #1f1f1f;
+  }
+
+  .pill-pace {
+    background: rgba(78, 115, 223, 0.14);
+    color: #1f2c6d;
+  }
+
+  .pill-hr {
+    background: rgba(241, 196, 15, 0.18);
+    color: #8c7200;
+  }
+
   .zone-bar {
     display: flex;
     height: 8px;
@@ -45,12 +74,30 @@
     background: #f3f3f3;
     margin-top: 0.5rem;
   }
-  .zone-seg { height: 100%; }
-  .zone-1 { background: rgba(78, 115, 223, 0.75); }
-  .zone-2 { background: rgba(54, 162, 235, 0.75); }
-  .zone-3 { background: rgba(46, 204, 113, 0.80); }
-  .zone-4 { background: rgba(243, 156, 18, 0.80); }
-  .zone-5 { background: rgba(231, 76, 60, 0.80); }
+
+  .zone-seg {
+    height: 100%;
+  }
+
+  .zone-1 {
+    background: rgba(78, 115, 223, 0.75);
+  }
+
+  .zone-2 {
+    background: rgba(54, 162, 235, 0.75);
+  }
+
+  .zone-3 {
+    background: rgba(46, 204, 113, 0.80);
+  }
+
+  .zone-4 {
+    background: rgba(243, 156, 18, 0.80);
+  }
+
+  .zone-5 {
+    background: rgba(231, 76, 60, 0.80);
+  }
 </style>
 <div class="columns">
   <div class="column is-half">
@@ -65,7 +112,9 @@
           </tr>
         </thead>
         <tbody id="hrTableBody">
-          <tr><td colspan="3">Loading…</td></tr>
+          <tr>
+            <td colspan="3">Loading…</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -85,7 +134,6 @@
       <div class="content" id="yearlySummaryStats">
         <p>Loading…</p>
       </div>
-      <div class="content" id="yearlyMonthlyList"></div>
     </div>
   </div>
 </div>
@@ -108,7 +156,6 @@
 <script>
   const hrTableBody = document.getElementById("hrTableBody");
   const yearlySummaryStats = document.getElementById("yearlySummaryStats");
-  const yearlyMonthlyList = document.getElementById("yearlyMonthlyList");
   const yearSelect = document.getElementById("yearSelect");
   const yearlyTitle = document.getElementById("yearlyTitle");
   const recentActivities = document.getElementById("recentActivities");
@@ -182,7 +229,6 @@
     yearlyTitle.textContent = `Yearly Summary (${year})`;
     if (!Array.isArray(series) || series.length === 0) {
       yearlySummaryStats.innerHTML = `<p>No data</p>`;
-      yearlyMonthlyList.innerHTML = "";
       return;
     }
 
@@ -193,7 +239,6 @@
     const totalMinutes = series.reduce((sum, row) => sum + ((paceToSeconds(row.mn_per_km) * (row.distance_km ?? 0)) / 60), 0);
     const z3Minutes = series.reduce((sum, row) => sum + ((paceToSeconds(row.mn_per_km) * (row.distance_km ?? 0)) / 60) * getZonePct(row, "z3"), 0);
     const aerobicPct = totalMinutes > 0 ? (z3Minutes / totalMinutes) * 100 : 0;
-    const maxDistance = Math.max(...series.map(row => row.distance_km ?? 0), 1);
 
     yearlySummaryStats.innerHTML = `
       <div class="columns is-multiline is-mobile">
@@ -223,26 +268,6 @@
         </div>
       </div>
     `;
-
-    yearlyMonthlyList.innerHTML = series.map(row => {
-      const distance = row.distance_km ?? 0;
-      const distancePct = Math.max(2, Math.round((distance / maxDistance) * 100));
-      return `
-        <div class="box is-shadowless" style="padding:0.75rem 1rem;">
-          <div class="is-flex is-justify-content-space-between is-align-items-center">
-            <div>
-              <strong>${row.period_start}</strong>
-              <div class="has-text-grey is-size-7">Pace: ${row.mn_per_km} • Distance: ${distance.toFixed(1)} km</div>
-              <div class="has-text-grey is-size-7">Activities: ${row.count_activities ?? 0}</div>
-            </div>
-            <div style="min-width: 140px; text-align: right;">
-              <div class="progress is-small is-primary" style="width: 140px;" max="100" value="${distancePct}"></div>
-              <span class="is-size-7 has-text-grey">${distance.toFixed(1)} km</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join("");
   }
 
   async function fetchHrZones() {
@@ -255,7 +280,6 @@
 
   async function fetchYearlySummary(year) {
     yearlySummaryStats.innerHTML = `<p>Loading…</p>`;
-    yearlyMonthlyList.innerHTML = "";
     const resp = await fetch(`/api/summary/yearly/${year}`);
     if (!resp.ok) throw new Error(`Yearly summary error ${resp.status}`);
     const data = await resp.json();
@@ -285,11 +309,12 @@
       const z4Pct = (getZonePct(act, "z4") * 100).toFixed(1);
       const z5Pct = (getZonePct(act, "z5") * 100).toFixed(1);
       const maxHr = act.max_hr_bpm ?? "–";
+      const avgHr = act.avg_hr_bpm ?? "–";
       const intensityRatio = maxHrFromApi ? (act.max_hr_bpm ?? 0) / maxHrFromApi : 0;
       const intensityClass =
         intensityRatio >= 0.9 ? "intensity-high"
-        : intensityRatio >= 0.8 ? "intensity-med"
-        : "intensity-low";
+          : intensityRatio >= 0.8 ? "intensity-med"
+            : "intensity-low";
       const zoneBar = `
         <div class="zone-bar">
           <div class="zone-seg zone-1" style="width:${z1Pct}%;"></div>
@@ -301,20 +326,20 @@
       `;
 
       return `
-        <div class="card activity-card ${intensityClass}">
+        <div class="card activity-card ${intensityClass}" style="cursor: pointer;" onclick="window.location.href='/ui/activities/details/${act.activity_id}';">
           <div class="card-content">
             <div class="is-flex is-justify-content-space-between is-align-items-center">
               <div>
                 <p class="title is-5">${act.activity_name || "Activity"}</p>
                 <p class="subtitle is-7 has-text-grey">${formatDate(act.start)}</p>
+                <p class="is-size-7 has-text-grey">Avg HR: ${avgHr} bpm • Max HR: ${maxHr}</p>
               </div>
             </div>
             <div class="activity-metrics" style="margin-top: 0.5rem;">
               <span class="pill pill-distance">${distanceKm.toFixed(1)} km</span>
-              <span class="pill pill-duration">${duration}</span>
               <span class="pill pill-pace">${act.pace_mn_per_km} min/km</span>
-              <span class="pill pill-hr">${act.avg_hr_bpm ?? "–"} bpm</span>
-              <span class="pill pill-hr-max">Max: ${maxHr}</span>
+              <span class="pill pill-duration">${duration}</span>
+              <span class="pill pill-hr">${avgHr} bpm</span>
             </div>
             ${zoneBar}
           </div>

@@ -4,8 +4,21 @@ from typing import Literal
 
 import polars as pl
 
-from stride.dao import get_activities_series, get_pace_series
-from stride.types import ActivityInfo, AppContext, HRInfos, HRZone, PaceStats, ZonePct
+from stride.dao import (
+    get_activities_series,
+    get_activity_details_series,
+    get_activity_info,
+    get_pace_series,
+)
+from stride.types import (
+    ActivityInfo,
+    ActivityPoint,
+    AppContext,
+    HRInfos,
+    HRZone,
+    PaceStats,
+    ZonePct,
+)
 
 ZONE_PCTS: list[tuple[float, float]] = [
     (0.50, 0.60),
@@ -36,6 +49,23 @@ def generate_hr_zone_infos(max_hr: int) -> HRInfos:
     return HRInfos(
         max_hr=max_hr,
         zones=zones,
+    )
+
+
+def _calculate_zones(df: pl.DataFrame) -> pl.DataFrame:
+    """Calculate and add zone percentages from raw zone seconds."""
+    return (
+        df.with_columns(
+            pl.sum_horizontal("z1_s", "z2_s", "z3_s", "z4_s", "z5_s").alias("total_s")
+        )
+        .with_columns(
+            (pl.col("z1_s") / pl.col("total_s")).alias("z1_pct"),
+            (pl.col("z2_s") / pl.col("total_s")).alias("z2_pct"),
+            (pl.col("z3_s") / pl.col("total_s")).alias("z3_pct"),
+            (pl.col("z4_s") / pl.col("total_s")).alias("z4_pct"),
+            (pl.col("z5_s") / pl.col("total_s")).alias("z5_pct"),
+        )
+        .drop(["z1_s", "z2_s", "z3_s", "z4_s", "z5_s", "total_s"])
     )
 
 
@@ -127,17 +157,7 @@ def _agg_dataframe(df: pl.DataFrame) -> pl.DataFrame:
             pl.col("du_s").filter(pl.col("zone") == 5).sum().fill_null(0).alias("z5_s"),
             pl.col("activity_id").n_unique().alias("count_activities"),
         )
-        .with_columns(
-            pl.sum_horizontal("z1_s", "z2_s", "z3_s", "z4_s", "z5_s").alias("total_s")
-        )
-        .with_columns(
-            (pl.col("z1_s") / pl.col("total_s")).alias("z1_pct"),
-            (pl.col("z2_s") / pl.col("total_s")).alias("z2_pct"),
-            (pl.col("z3_s") / pl.col("total_s")).alias("z3_pct"),
-            (pl.col("z4_s") / pl.col("total_s")).alias("z4_pct"),
-            (pl.col("z5_s") / pl.col("total_s")).alias("z5_pct"),
-        )
-        .drop(["z1_s", "z2_s", "z3_s", "z4_s", "z5_s", "total_s"])
+        .pipe(_calculate_zones)
     )
 
 
@@ -205,6 +225,14 @@ def _format_individual_activity_info(info: dict) -> ActivityInfo:
     )
 
 
+def _process_activity_data(df: pl.DataFrame) -> pl.DataFrame:
+    """Common processing for activity data: calculate zones."""
+    return df.with_columns(
+        pl.col("time").str.to_datetime(strict=False, time_zone="UTC").alias("ts"),
+        (1000 / pl.col("avg_speed_m_per_s")).alias("pace_s_per_km"),
+    ).pipe(_calculate_zones)
+
+
 def generate_activities_infos(
     ctx: AppContext, start: date, end: date
 ) -> list[ActivityInfo]:
@@ -212,34 +240,71 @@ def generate_activities_infos(
     flatten_serie = [a for i in series for a in i]
     df = pl.DataFrame(flatten_serie)
     df = (
-        df.with_columns(
-            pl.col("time").str.to_datetime(strict=False, time_zone="UTC").alias("ts")
-        )
+        _process_activity_data(df)
         .sort(["activity_id", "ts"])
         .unique(subset=["activity_id"], keep="last")
-        .with_columns(
-            pl.sum_horizontal("z1_s", "z2_s", "z3_s", "z4_s", "z5_s").alias("total_s")
-        )
-        .with_columns(
-            (pl.col("z1_s") / pl.col("total_s")).alias("z1_pct"),
-            (pl.col("z2_s") / pl.col("total_s")).alias("z2_pct"),
-            (pl.col("z3_s") / pl.col("total_s")).alias("z3_pct"),
-            (pl.col("z4_s") / pl.col("total_s")).alias("z4_pct"),
-            (pl.col("z5_s") / pl.col("total_s")).alias("z5_pct"),
-            (1000 / pl.col("avg_speed_m_per_s")).alias("pace_s_per_km"),
-        )
-        .drop(
-            [
-                "ts",
-                "z1_s",
-                "z2_s",
-                "z3_s",
-                "z4_s",
-                "z5_s",
-                "total_s",
-                "avg_speed_m_per_s",
-            ]
-        )
+        .sort(["ts"], descending=True)
+        .drop("ts")
     )
     result = df.to_dicts()
     return [_format_individual_activity_info(i) for i in result]
+
+
+def generate_activity_info_by_id(
+    ctx: AppContext, activity_id: int
+) -> ActivityInfo | None:
+    """Fetch activity info by activity_id."""
+    # First try the direct query (may return empty depending on Influx schema)
+    series = get_activity_info(ctx.influx_conn, activity_id)
+    flatten_serie = [a for i in series for a in i]
+
+    df = pl.DataFrame(flatten_serie)
+    df = _process_activity_data(df).drop("ts")
+
+    result = df.to_dicts()
+    if not result:
+        return None
+
+    return _format_individual_activity_info(result[0])
+
+
+def generate_activity_details_serie(
+    ctx: AppContext, activity_id: int
+) -> list[ActivityPoint]:
+    """Fetch detailed activity points for a specific activity."""
+    series = get_activity_details_series(ctx.influx_conn, activity_id)
+    flatten_serie = [a for i in series for a in i]
+    df = pl.DataFrame(flatten_serie)
+    df = (
+        df.with_columns(
+            pl.col("duration_s").diff().alias("du_s"),
+            pl.col("distance_m").diff().alias("dd_m"),
+        )
+        .with_columns(
+            pl.when(pl.col("dd_m") >= 0)
+            .then(pl.col("dd_m"))
+            .otherwise(0)
+            .alias("dd_m"),
+            pl.when(pl.col("du_s") >= 0)
+            .then(pl.col("du_s"))
+            .otherwise(0)
+            .alias("du_s"),
+        )
+        .with_columns(
+            pl.when(pl.col("dd_m") > 0)
+            .then(pl.col("du_s") * 1000 / pl.col("dd_m"))
+            .otherwise(None)
+            .alias("s_per_km")
+        )
+        .drop("dd_m", "du_s")
+    )
+
+    def _format_point(d: dict):
+        if d.get("s_per_km"):
+            s_per_km = int(round(d["s_per_km"]))
+            mn, s = divmod(s_per_km, 60)
+            mn_per_km = f"{mn}:{s:02d}"
+            d["pace_mn_per_km"] = mn_per_km
+        return ActivityPoint(**d)
+
+    return [_format_point(i) for i in df.to_dicts()]
