@@ -157,6 +157,9 @@
   const hrTableBody = document.getElementById("hrTableBody");
   const yearlySummaryStats = document.getElementById("yearlySummaryStats");
   const yearSelect = document.getElementById("yearSelect");
+  const START = "{{ start }}";
+  const END = "{{ end }}";
+
   const yearlyTitle = document.getElementById("yearlyTitle");
   const recentActivities = document.getElementById("recentActivities");
   let maxHrFromApi = null;
@@ -350,8 +353,7 @@
 
   async function fetchRecentActivities() {
     recentActivities.innerHTML = `<p>Loading…</p>`;
-    const range = dateRangeLastDays(7);
-    const resp = await fetch(`/api/activities?start=${range.start}&end=${range.end}`);
+    const resp = await fetch(`/api/activities?start=${encodeURIComponent(START)}&end=${encodeURIComponent(END)}`);
     if (!resp.ok) throw new Error(`Activities error ${resp.status}`);
     const data = await resp.json();
     renderRecentActivities(data.series ?? data);

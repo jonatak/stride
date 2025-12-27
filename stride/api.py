@@ -59,8 +59,8 @@ def get_ui_router(ctx: AppContext) -> APIRouter:
     templates = Jinja2Templates(directory="templates")
 
     def default_dates():
-        end = date.today()
-        start = end - timedelta(days=6)
+        end = date.today() + timedelta(days=1)
+        start = end - timedelta(days=7)
         return start, end
 
     @router.get("/pace/monthly", response_class=HTMLResponse)
@@ -86,10 +86,13 @@ def get_ui_router(ctx: AppContext) -> APIRouter:
 
     @router.get("/home", response_class=HTMLResponse)
     def home_ui(request: Request):
+        start, end = default_dates()
         return templates.TemplateResponse(
             "home.html",
             {
                 "request": request,
+                "start": start.isoformat(),
+                "end": end.isoformat(),
                 "active_page": "home",
             },
         )
