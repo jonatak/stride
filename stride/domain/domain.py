@@ -5,7 +5,7 @@ from typing import Literal
 
 import polars as pl
 
-from stride.dao import (
+from stride.domain.dao import (
     get_activities_series,
     get_activity_details_series,
     get_activity_info,
@@ -29,11 +29,13 @@ ZONE_PCTS: list[tuple[float, float]] = [
     (0.90, 1.00),
 ]
 
+MAX_HR = 194
 
-def generate_hr_zone_infos(max_hr: int) -> HRInfos:
+
+def generate_hr_zone_infos() -> HRInfos:
     zones: list[HRZone] = []
     prev_max: int | None = None
-
+    max_hr = MAX_HR
     for i, (pmin, pmax) in enumerate(ZONE_PCTS, start=1):
         min_bpm = math.ceil(pmin * max_hr)
         max_bpm = math.floor(pmax * max_hr)
@@ -101,7 +103,7 @@ def _format_individual_pace_stats(
 
 
 def _prepare_columns_for_agg(ctx: AppContext, df: pl.DataFrame) -> pl.DataFrame:
-    hr_info = generate_hr_zone_infos(ctx.max_hr)
+    hr_info = generate_hr_zone_infos()
 
     hr_expr: None | pl.Expr = None
     for i, zone in enumerate(hr_info.zones, start=1):
@@ -162,48 +164,12 @@ def _agg_dataframe(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def generate_pace_series_monthly(
-    ctx: AppContext, start: date, end: date
-) -> list[PaceStats]:
-    series = get_pace_series(ctx.influx_conn, start, end)
-    flatten_serie = [a for i in series for a in i]
-
-    df = pl.DataFrame(flatten_serie)
-
-    df = (
-        df.pipe(partial(_prepare_columns_for_agg, ctx))
-        .with_columns(
-            pl.col("time")
-            .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
-            .dt.strftime("%Y-%m")
-            .alias("period_start")
-        )
-        .pipe(_agg_dataframe)
-    )
-    result = df.to_dicts()
-    return [_format_individual_pace_stats(i, "monthly") for i in result]
-
-
-def generate_pace_info_yearly(ctx: AppContext, year: int) -> list[PaceStats]:
-    start = date(year, 1, 1)
-    end = date(year, 12, 31)
-    series = get_pace_series(ctx.influx_conn, start, end)
-    flatten_serie = [a for i in series for a in i]
-
-    df = pl.DataFrame(flatten_serie)
-
-    df = (
-        df.pipe(partial(_prepare_columns_for_agg, ctx))
-        .with_columns(
-            pl.col("time")
-            .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
-            .dt.strftime("%Y")
-            .alias("period_start")
-        )
-        .pipe(_agg_dataframe)
-    )
-    result = df.to_dicts()
-    return [_format_individual_pace_stats(i, "yearly") for i in result]
+def _process_activity_data(df: pl.DataFrame) -> pl.DataFrame:
+    """Common processing for activity data: calculate zones."""
+    return df.with_columns(
+        pl.col("time").str.to_datetime(strict=False, time_zone="UTC").alias("ts"),
+        (1000 / pl.col("avg_speed_m_per_s")).alias("pace_s_per_km"),
+    ).pipe(_calculate_zones)
 
 
 def _format_individual_activity_info(info: dict) -> ActivityInfo:
@@ -230,12 +196,52 @@ def _format_individual_activity_info(info: dict) -> ActivityInfo:
     )
 
 
-def _process_activity_data(df: pl.DataFrame) -> pl.DataFrame:
-    """Common processing for activity data: calculate zones."""
-    return df.with_columns(
-        pl.col("time").str.to_datetime(strict=False, time_zone="UTC").alias("ts"),
-        (1000 / pl.col("avg_speed_m_per_s")).alias("pace_s_per_km"),
-    ).pipe(_calculate_zones)
+def generate_pace_series_monthly(
+    ctx: AppContext, start: date, end: date
+) -> list[PaceStats]:
+    series = get_pace_series(ctx.influx_conn, start, end)
+    flatten_serie = [a for i in series for a in i]
+    if not flatten_serie:
+        return []
+
+    df = pl.DataFrame(flatten_serie)
+
+    df = (
+        df.pipe(partial(_prepare_columns_for_agg, ctx))
+        .with_columns(
+            pl.col("time")
+            .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
+            .dt.strftime("%Y-%m")
+            .alias("period_start")
+        )
+        .pipe(_agg_dataframe)
+    )
+    result = df.to_dicts()
+    return [_format_individual_pace_stats(i, "monthly") for i in result]
+
+
+def generate_pace_info_yearly(ctx: AppContext, year: int) -> list[PaceStats]:
+    start = date(year, 1, 1)
+    end = date(year, 12, 31)
+    series = get_pace_series(ctx.influx_conn, start, end)
+    flatten_serie = [a for i in series for a in i]
+    if not flatten_serie:
+        return []
+
+    df = pl.DataFrame(flatten_serie)
+
+    df = (
+        df.pipe(partial(_prepare_columns_for_agg, ctx))
+        .with_columns(
+            pl.col("time")
+            .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
+            .dt.strftime("%Y")
+            .alias("period_start")
+        )
+        .pipe(_agg_dataframe)
+    )
+    result = df.to_dicts()
+    return [_format_individual_pace_stats(i, "yearly") for i in result]
 
 
 def generate_activities_infos(
@@ -243,6 +249,9 @@ def generate_activities_infos(
 ) -> list[ActivityInfo]:
     series = get_activities_series(ctx.influx_conn, start, end)
     flatten_serie = [a for i in series for a in i]
+    if not flatten_serie:
+        return []
+
     df = pl.DataFrame(flatten_serie)
     df = (
         _process_activity_data(df)
@@ -263,6 +272,9 @@ def generate_activity_info_by_id(
     series = get_activity_info(ctx.influx_conn, activity_id)
     flatten_serie = [a for i in series for a in i]
 
+    if not flatten_serie:
+        return None
+
     df = pl.DataFrame(flatten_serie)
     df = _process_activity_data(df).drop("ts")
 
@@ -279,6 +291,9 @@ def generate_activity_details_serie(
     """Fetch detailed activity points for a specific activity."""
     series = get_activity_details_series(ctx.influx_conn, activity_id)
     flatten_serie = [a for i in series for a in i]
+    if not flatten_serie:
+        return []
+
     df = pl.DataFrame(flatten_serie)
     df = (
         df.with_columns(
@@ -301,6 +316,8 @@ def generate_activity_details_serie(
             .otherwise(None)
             .alias("s_per_km")
         )
+        .with_columns(pl.col("hr").round().alias("hr"))
+        .filter(pl.col("s_per_km") < 600)
         .drop("dd_m", "du_s")
     )
 

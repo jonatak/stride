@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}Stride Dashboard{% endblock %}</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
+  {% block styles %}{% endblock %}
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+  <section class="section">
+    <div class="container">
+      <div class="columns">
+        <div class="column is-one-quarter">
+          <aside class="menu">
+            <p class="menu-label">Dashboard</p>
+            <ul class="menu-list">
+              <li><a class="{% if active_page == 'home' %}is-active{% endif %}" href="/ui/home">Home</a></li>
+              <li><a class="{% if active_page == 'monthly_summary' %}is-active{% endif %}"
+                  href="/ui/pace/monthly">Monthly
+                  Summary</a>
+              </li>
+              <li><a class="{% if active_page == 'activities' %}is-active{% endif %}"
+                  href="/ui/activities">Activities</a>
+              </li>
+            </ul>
+          </aside>
+        </div>
+        <div class="column">
+          <h1 class="title">{% block page_title %}{% endblock %}</h1>
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+  <button class="chat-toggle" id="chatToggle">💬</button>
+
+  <div class="chat-widget" id="chatWidget" style="display: none;">
+    <div class="chat-header">
+      <span>Coach Assistant</span>
+      <label class="chat-stream-toggle">
+        <input type="checkbox" id="streamToggle">
+        <span>Stream</span>
+      </label>
+      <button id="closeChat">×</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-area">
+      <input type="text" id="chatInput" placeholder="Ask your coach...">
+      <button id="sendChat">Send</button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', path='js/base.js') }}"></script>
+
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

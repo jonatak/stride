@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Stride Dashboard - Activity Details{% endblock %}
+{% block page_title %}Activity Details{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/activity_details.css') }}">
+{% endblock %}
+
+{% block content %}
+<div id="activitySummary" data-activity-id="{{ activity_id }}" style="margin-bottom: 2rem;">
+    <p class="has-text-grey">Loading activity details…</p>
+</div>
+
+<div id="chartsContainer">
+    <!-- Activity Map -->
+    <div class="chart-container">
+        <div class="chart-title">Activity Route</div>
+        <div id="mapContainer"></div>
+        <div class="zone-legend" id="mapZoneLegend"></div>
+    </div>
+
+    <!-- HR vs Pace Chart -->
+    <div class="chart-container">
+        <div class="chart-title">Heart Rate vs Pace</div>
+        <div class="chart-wrapper">
+            <canvas id="hrPaceChart"></canvas>
+        </div>
+        <div class="zone-legend" id="zoneLegend"></div>
+    </div>
+
+    <!-- Elevation Chart -->
+    <div class="chart-container">
+        <div class="chart-title">Elevation Profile</div>
+        <div class="chart-wrapper">
+            <canvas id="elevationChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div id="errorContainer"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script src="{{ url_for('static', path='js/activity_details.js') }}"></script>
+{% endblock %}

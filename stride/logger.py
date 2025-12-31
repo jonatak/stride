@@ -65,7 +65,7 @@ def init_logger(
     logger.configure(
         handlers=[
             {
-                "sink": sys.stdout,
+                "sink": sys.stderr,
                 "format": format,
                 "level": level,
                 "serialize": False,

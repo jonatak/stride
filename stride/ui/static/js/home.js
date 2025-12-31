@@ -1,168 +1,13 @@
-{% extends "base.html" %}
+const hrTableBody = document.getElementById("hrTableBody");
+const yearlySummaryStats = document.getElementById("yearlySummaryStats");
+const yearSelect = document.getElementById("yearSelect");
+const yearlyTitle = document.getElementById("yearlyTitle");
+const recentActivities = document.getElementById("recentActivities");
+let maxHrFromApi = null;
 
-{% block title %}Stride Dashboard - Home{% endblock %}
-{% block page_title %}Overview{% endblock %}
-
-{% block content %}
-<style>
-  .stat-card {
-    min-width: 150px;
-  }
-
-  .stat-value {
-    white-space: nowrap;
-  }
-
-  .activity-card {
-    margin-bottom: 0.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-radius: 12px;
-  }
-
-  .intensity-low {
-    border-left: 6px solid #2ecc71;
-  }
-
-  .intensity-med {
-    border-left: 6px solid #f1c40f;
-  }
-
-  .intensity-high {
-    border-left: 6px solid #e74c3c;
-  }
-
-  .activity-metrics {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.35rem 0.6rem;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-
-  .pill-distance {
-    background: rgba(78, 115, 223, 0.14);
-    color: #1f2c6d;
-  }
-
-  .pill-duration {
-    background: rgba(54, 54, 54, 0.12);
-    color: #1f1f1f;
-  }
-
-  .pill-pace {
-    background: rgba(78, 115, 223, 0.14);
-    color: #1f2c6d;
-  }
-
-  .pill-hr {
-    background: rgba(241, 196, 15, 0.18);
-    color: #8c7200;
-  }
-
-  .zone-bar {
-    display: flex;
-    height: 8px;
-    border-radius: 999px;
-    overflow: hidden;
-    background: #f3f3f3;
-    margin-top: 0.5rem;
-  }
-
-  .zone-seg {
-    height: 100%;
-  }
-
-  .zone-1 {
-    background: rgba(78, 115, 223, 0.75);
-  }
-
-  .zone-2 {
-    background: rgba(54, 162, 235, 0.75);
-  }
-
-  .zone-3 {
-    background: rgba(46, 204, 113, 0.80);
-  }
-
-  .zone-4 {
-    background: rgba(243, 156, 18, 0.80);
-  }
-
-  .zone-5 {
-    background: rgba(231, 76, 60, 0.80);
-  }
-</style>
-<div class="columns">
-  <div class="column is-half">
-    <div class="box">
-      <h2 class="subtitle">HR Zones</h2>
-      <table class="table is-fullwidth is-striped is-narrow" id="hrTable">
-        <thead>
-          <tr>
-            <th>Zone</th>
-            <th>Min (bpm)</th>
-            <th>Max (bpm)</th>
-          </tr>
-        </thead>
-        <tbody id="hrTableBody">
-          <tr>
-            <td colspan="3">Loading…</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div class="column is-half">
-    <div class="box">
-      <div class="is-flex is-justify-content-space-between is-align-items-center">
-        <h2 class="subtitle" id="yearlyTitle">Yearly Summary</h2>
-        <div class="field">
-          <div class="control">
-            <div class="select is-small">
-              <select id="yearSelect"></select>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="content" id="yearlySummaryStats">
-        <p>Loading…</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="columns">
-  <div class="column">
-    <div class="box">
-      <div class="is-flex is-justify-content-space-between is-align-items-center">
-        <h2 class="subtitle">Recent Activities (last 7 days)</h2>
-      </div>
-      <div id="recentActivities">
-        <p>Loading…</p>
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  const hrTableBody = document.getElementById("hrTableBody");
-  const yearlySummaryStats = document.getElementById("yearlySummaryStats");
-  const yearSelect = document.getElementById("yearSelect");
-  const START = "{{ start }}";
-  const END = "{{ end }}";
-
-  const yearlyTitle = document.getElementById("yearlyTitle");
-  const recentActivities = document.getElementById("recentActivities");
-  let maxHrFromApi = null;
+if (hrTableBody && yearlySummaryStats && yearSelect && recentActivities && yearlyTitle) {
+  const startFromServer = recentActivities.dataset.start || "";
+  const endFromServer = recentActivities.dataset.end || "";
 
   const zoneColors = {
     1: "is-success",
@@ -353,7 +198,9 @@
 
   async function fetchRecentActivities() {
     recentActivities.innerHTML = `<p>Loading…</p>`;
-    const resp = await fetch(`/api/activities?start=${encodeURIComponent(START)}&end=${encodeURIComponent(END)}`);
+    const start = startFromServer || dateRangeLastDays(7).start;
+    const end = endFromServer || dateRangeLastDays(7).end;
+    const resp = await fetch(`/api/activities?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
     if (!resp.ok) throw new Error(`Activities error ${resp.status}`);
     const data = await resp.json();
     renderRecentActivities(data.series ?? data);
@@ -391,5 +238,4 @@
       recentActivities.innerHTML = `<p>Error: ${err.message}</p>`;
     });
   });
-</script>
-{% endblock %}
+}

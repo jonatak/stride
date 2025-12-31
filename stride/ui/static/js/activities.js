@@ -1,150 +1,13 @@
-{% extends "base.html" %}
+const activitiesList = document.getElementById("activitiesList");
+const rangePreset = document.getElementById("rangePreset");
+const startInput = document.getElementById("startInput");
+const endInput = document.getElementById("endInput");
+const applyBtn = document.getElementById("applyBtn");
+let maxHrFromApi = null;
 
-{% block title %}Stride Dashboard - Activities{% endblock %}
-{% block page_title %}Activities{% endblock %}
-
-{% block content %}
-<style>
-  .activity-card {
-    margin-bottom: 0.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-radius: 12px;
-  }
-
-  .intensity-low {
-    border-left: 6px solid #2ecc71;
-  }
-
-  .intensity-med {
-    border-left: 6px solid #f1c40f;
-  }
-
-  .intensity-high {
-    border-left: 6px solid #e74c3c;
-  }
-
-  .activity-metrics {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.35rem 0.6rem;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-
-  .pill-distance {
-    background: rgba(78, 115, 223, 0.14);
-    color: #1f2c6d;
-  }
-
-  .pill-duration {
-    background: rgba(54, 54, 54, 0.12);
-    color: #1f1f1f;
-  }
-
-  .pill-pace {
-    background: rgba(78, 115, 223, 0.14);
-    color: #1f2c6d;
-  }
-
-  .pill-hr {
-    background: rgba(241, 196, 15, 0.18);
-    color: #8c7200;
-  }
-
-  .pill-hr-max {
-    background: rgba(231, 76, 60, 0.15);
-    color: #b0392e;
-  }
-
-  .zone-bar {
-    display: flex;
-    height: 8px;
-    border-radius: 999px;
-    overflow: hidden;
-    background: #f3f3f3;
-    margin-top: 0.5rem;
-  }
-
-  .zone-seg {
-    height: 100%;
-  }
-
-  .zone-1 {
-    background: rgba(78, 115, 223, 0.75);
-  }
-
-  .zone-2 {
-    background: rgba(54, 162, 235, 0.75);
-  }
-
-  .zone-3 {
-    background: rgba(46, 204, 113, 0.80);
-  }
-
-  .zone-4 {
-    background: rgba(243, 156, 18, 0.80);
-  }
-
-  .zone-5 {
-    background: rgba(231, 76, 60, 0.80);
-  }
-</style>
-
-<div class="box">
-  <div class="is-flex is-justify-content-space-between is-align-items-center is-flex-wrap-wrap" style="gap: 0.75rem;">
-    <div>
-      <h2 class="subtitle" style="margin-bottom: 0.25rem;">Filter</h2>
-      <p class="is-size-7 has-text-grey">Choose a range to see activities.</p>
-    </div>
-    <div class="field has-addons">
-      <div class="control">
-        <div class="select is-small">
-          <select id="rangePreset">
-            <option value="last-7" selected>Last 7 days</option>
-            <option value="last-30">Last 30 days</option>
-            <option value="last-90">Last 90 days</option>
-            <option value="this-month">This month</option>
-            <option value="prev-month">Previous month</option>
-            <option value="custom">Custom…</option>
-          </select>
-        </div>
-      </div>
-      <div class="control">
-        <input class="input is-small" type="date" id="startInput">
-      </div>
-      <div class="control">
-        <input class="input is-small" type="date" id="endInput">
-      </div>
-      <div class="control">
-        <button class="button is-small is-link" id="applyBtn">Apply</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="activitiesList">
-  <p>Loading…</p>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  const START = "{{ start }}";
-  const END = "{{ end }}";
-
-  const activitiesList = document.getElementById("activitiesList");
-  const rangePreset = document.getElementById("rangePreset");
-  const startInput = document.getElementById("startInput");
-  const endInput = document.getElementById("endInput");
-  const applyBtn = document.getElementById("applyBtn");
-  let maxHrFromApi = null;
+if (activitiesList && rangePreset && startInput && endInput && applyBtn) {
+  const startFromServer = activitiesList.dataset.start || "";
+  const endFromServer = activitiesList.dataset.end || "";
 
   function parseISO(dateStr) {
     const d = new Date(dateStr);
@@ -184,12 +47,13 @@
         start = startOfMonth(today);
         end = endOfMonth(today);
         break;
-      case "prev-month":
+      case "prev-month": {
         const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         start = startOfMonth(prev);
         end = endOfMonth(prev);
         break;
-      case "custom":
+      }
+      case "custom": {
         const s = parseISO(startInput.value);
         const e = parseISO(endInput.value);
         if (s && e) {
@@ -197,6 +61,7 @@
           end = e;
         }
         break;
+      }
       default:
         start = new Date(today);
         start.setDate(end.getDate() - 6);
@@ -310,8 +175,8 @@
 
   window.addEventListener("DOMContentLoaded", () => {
     // Initialize with server-provided defaults
-    startInput.value = START;
-    endInput.value = END;
+    if (startFromServer) startInput.value = startFromServer;
+    if (endFromServer) endInput.value = endFromServer;
     rangePreset.value = "last-7";
 
     rangePreset.addEventListener("change", (e) => {
@@ -327,5 +192,4 @@
       applyFilters();
     });
   });
-</script>
-{% endblock %}
+}

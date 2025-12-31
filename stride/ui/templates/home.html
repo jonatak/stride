@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Stride Dashboard - Home{% endblock %}
+{% block page_title %}Overview{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/home.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="columns">
+  <div class="column is-half">
+    <div class="box">
+      <h2 class="subtitle">HR Zones</h2>
+      <table class="table is-fullwidth is-striped is-narrow" id="hrTable">
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>Min (bpm)</th>
+            <th>Max (bpm)</th>
+          </tr>
+        </thead>
+        <tbody id="hrTableBody">
+          <tr>
+            <td colspan="3">Loading…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="column is-half">
+    <div class="box">
+      <div class="is-flex is-justify-content-space-between is-align-items-center">
+        <h2 class="subtitle" id="yearlyTitle">Yearly Summary</h2>
+        <div class="field">
+          <div class="control">
+            <div class="select is-small">
+              <select id="yearSelect"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="content" id="yearlySummaryStats">
+        <p>Loading…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="columns">
+  <div class="column">
+    <div class="box">
+      <div class="is-flex is-justify-content-space-between is-align-items-center">
+        <h2 class="subtitle">Recent Activities (last 7 days)</h2>
+      </div>
+      <div id="recentActivities" data-start="{{ start }}" data-end="{{ end }}">
+        <p>Loading…</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='js/home.js') }}"></script>
+{% endblock %}

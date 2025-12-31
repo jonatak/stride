@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Stride Dashboard - Activities{% endblock %}
+{% block page_title %}Activities{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/activities.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="box">
+  <div class="is-flex is-justify-content-space-between is-align-items-center is-flex-wrap-wrap" style="gap: 0.75rem;">
+    <div>
+      <h2 class="subtitle" style="margin-bottom: 0.25rem;">Filter</h2>
+      <p class="is-size-7 has-text-grey">Choose a range to see activities.</p>
+    </div>
+    <div class="field has-addons">
+      <div class="control">
+        <div class="select is-small">
+          <select id="rangePreset">
+            <option value="last-7" selected>Last 7 days</option>
+            <option value="last-30">Last 30 days</option>
+            <option value="last-90">Last 90 days</option>
+            <option value="this-month">This month</option>
+            <option value="prev-month">Previous month</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+      </div>
+      <div class="control">
+        <input class="input is-small" type="date" id="startInput">
+      </div>
+      <div class="control">
+        <input class="input is-small" type="date" id="endInput">
+      </div>
+      <div class="control">
+        <button class="button is-small is-link" id="applyBtn">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="activitiesList" data-start="{{ start }}" data-end="{{ end }}">
+  <p>Loading…</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='js/activities.js') }}"></script>
+{% endblock %}

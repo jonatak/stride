@@ -2,13 +2,38 @@ from dataclasses import dataclass
 from datetime import date, datetime
 
 from influxdb import InfluxDBClient
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
+from pydantic_ai import Agent
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+
+class ChatStreamResponse(BaseModel):
+    delta: str = ""
+    done: bool = False
+    error: str = ""
+
+
+ZONE_LABELS: dict[int, str] = {
+    1: "Very Easy (Warm-up / Recovery)",
+    2: "Easy",
+    3: "Aerobic",
+    4: "Threshold",
+    5: "VO₂ Max",
+}
 
 
 class HRZone(BaseModel):
     zone: int = Field(ge=1, le=5)
     min_bpm: int
     max_bpm: int
+
+    @computed_field  # included in model_dump/model_dump_json
+    @property
+    def label(self) -> str:
+        return ZONE_LABELS[self.zone]
 
 
 class HRInfos(BaseModel):
@@ -18,8 +43,16 @@ class HRInfos(BaseModel):
 
 @dataclass
 class AppContext:
-    max_hr: int
     influx_conn: InfluxDBClient
+    agent: Agent | None = None
+
+
+@dataclass
+class AgentContext:
+    mcp_url: str
+    agent_model: str
+    agent_base_url: str
+    agent_api_key: str
 
 
 class ZonePct(BaseModel):
@@ -36,6 +69,10 @@ class PaceStats(BaseModel):
     distance_km: int
     count_activities: int
     zones: ZonePct
+
+    @property
+    def date_label(self) -> str:
+        return self.period_start.strftime("%d %B, %Y")
 
 
 class PaceResponse(BaseModel):
@@ -54,6 +91,10 @@ class ActivityInfo(BaseModel):
 
     zones: ZonePct
 
+    @property
+    def date_label(self) -> str:
+        return self.start.strftime("%d %B, %Y")
+
 
 class ActivitiesResponse(BaseModel):
     series: list[ActivityInfo]
@@ -66,7 +107,7 @@ class ActivityInfoResponse(BaseModel):
 class ActivityPoint(BaseModel):
     distance_m: float | None = None
     duration_s: float | None = None
-    hr: float | None = None
+    hr: int | None = None
     latitude: float | None = None
     longitude: float | None = None
     altitude: float | None = None
