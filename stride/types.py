@@ -116,3 +116,12 @@ class ActivityPoint(BaseModel):
 
 class ActivityDetailsResponse(BaseModel):
     series: list[ActivityPoint]
+
+
+class VO2MaxPoint(BaseModel):
+    period_start: date
+    vo2_max: float
+
+
+class VO2MaxResponse(BaseModel):
+    series: list[VO2MaxPoint]

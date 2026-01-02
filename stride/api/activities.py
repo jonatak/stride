@@ -11,6 +11,7 @@ from stride.types import (
     AppContext,
     HRInfos,
     PaceResponse,
+    VO2MaxResponse,
 )
 
 
@@ -47,6 +48,12 @@ def get_main_router(ctx: AppContext) -> APIRouter:
     def activity_info(activity_id: int) -> ActivityInfoResponse:
         return ActivityInfoResponse(
             activity=domain.generate_activity_info_by_id(ctx, activity_id)
+        )
+
+    @router.get("/vo2max")
+    def vo2max(start: date, end: date) -> VO2MaxResponse:
+        return VO2MaxResponse(
+            series=domain.generate_vo2_max_monthly_series(ctx, start, end)
         )
 
     return router

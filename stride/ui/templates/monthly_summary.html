@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Stride Dashboard - Progress{% endblock %}
+{% block page_title %}Monthly Running Summary{% endblock %}
+
+{% block content %}
+<div class="columns">
+  <div class="column is-full">
+    <div class="field is-grouped is-align-items-center">
+      <div class="control">
+        <label class="label is-small" for="rangeSelect">Time range</label>
+        <div class="select is-small">
+          <select id="rangeSelect" data-start="{{ start }}" data-end="{{ end }}">
+            <option value="current-year">Current year</option>
+            <option value="previous-year">Previous year</option>
+            <option value="last-6-months" selected>Last 6 months</option>
+            <option value="last-12-months">Last 12 months</option>
+            <option value="last-24-months">Last 24 months</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="columns">
+  <div class="column is-full">
+    <div class="box">
+      <h2 class="subtitle">Monthly Pace</h2>
+      <canvas id="paceChart"></canvas>
+    </div>
+    <div class="box">
+      <h2 class="subtitle">Combined Overview</h2>
+      <p class="is-size-7 has-text-grey">Minutes per zone (stacked), with distance and activity count overlaid.</p>
+      <canvas id="combinedChart"></canvas>
+    </div>
+    <div class="box">
+      <h2 class="subtitle">VO2 Max Trend</h2>
+      <p class="is-size-7 has-text-grey">Daily estimates over the selected range.</p>
+      <canvas id="vo2maxChart"></canvas>
+      <p id="vo2maxEmpty" class="is-size-7 has-text-grey" style="margin-top: 0.5rem;"></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', path='js/monthly_summary.js') }}"></script>
+{% endblock %}
