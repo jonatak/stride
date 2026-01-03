@@ -4,7 +4,8 @@ from typing import AsyncIterator
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from stride.types import AppContext, ChatRequest, ChatStreamResponse
+from stride.api.schemas import ChatRequest, ChatStreamResponse
+from stride.types import AppContext
 
 
 def get_chat_router(ctx: AppContext) -> APIRouter:

@@ -67,7 +67,8 @@ if (activitySummary && chartsContainer && errorContainer && hrPaceCanvasEl && el
     try {
       const resp = await fetch(`/api/activities/details/${ACTIVITY_ID}`);
       if (!resp.ok) throw new Error(`Failed to fetch activity details: ${resp.status}`);
-      return await resp.json();
+      const data = await resp.json();
+      return data.info ?? data;
     } catch (error) {
       console.error("Error fetching activity details:", error);
       throw error;

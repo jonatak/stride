@@ -6,7 +6,8 @@ from stride.agent import build_agent
 from stride.app import create_fast_api_app
 from stride.domain.dao import init_connection
 from stride.logger import init_logger, init_logging_override
-from stride.types import AgentContext, AppContext
+from stride.agent.types import AgentContext
+from stride.types import AppContext
 
 
 @click.group()

@@ -93,7 +93,8 @@ if (activitiesList && rangePreset && startInput && endInput && applyBtn) {
       const resp = await fetch("/api/hr/zones");
       if (!resp.ok) return;
       const data = await resp.json();
-      maxHrFromApi = data.max_hr ?? null;
+      const info = data.info ?? data;
+      maxHrFromApi = info.max_hr ?? null;
     } catch (err) {
       console.error("HR zones fetch failed", err);
     }

@@ -4,23 +4,23 @@ from typing import Annotated
 from fastapi import APIRouter, Path
 
 from stride import domain
-from stride.types import (
+from stride.api.schemas import (
     ActivitiesResponse,
     ActivityDetailsResponse,
     ActivityInfoResponse,
-    AppContext,
-    HRInfos,
+    HRInfosResponse,
     PaceResponse,
     VO2MaxResponse,
 )
+from stride.types import AppContext
 
 
 def get_main_router(ctx: AppContext) -> APIRouter:
     router = APIRouter()
 
     @router.get("/hr/zones")
-    def hr_zone() -> HRInfos:
-        return domain.generate_hr_zone_infos()
+    def hr_zone() -> HRInfosResponse:
+        return HRInfosResponse(info=domain.generate_hr_zone_infos())
 
     @router.get("/pace/monthly")
     def pace_monthly(start: date, end: date) -> PaceResponse:

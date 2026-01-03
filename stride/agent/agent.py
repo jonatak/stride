@@ -3,7 +3,7 @@ from pydantic_ai.mcp import MCPServerStreamableHTTP
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from stride.types import AgentContext
+from stride.agent.types import AgentContext
 
 from .prompts import SYSTEM_PROMPT
 

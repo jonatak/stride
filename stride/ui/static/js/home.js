@@ -123,7 +123,7 @@ if (hrTableBody && yearlySummaryStats && yearSelect && recentActivities && yearl
     const resp = await fetch("/api/hr/zones");
     if (!resp.ok) throw new Error(`HR zones error ${resp.status}`);
     const data = await resp.json();
-    renderHrZones(data);
+    renderHrZones(data.info ?? data);
   }
 
   async function fetchYearlySummary(year) {

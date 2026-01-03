@@ -6,16 +6,16 @@ from fastapi import APIRouter, HTTPException, Path
 from fastapi.responses import StreamingResponse
 
 from stride import domain
-from stride.types import (
+from stride.api.schemas import (
     ActivitiesResponse,
     ActivityDetailsResponse,
     ActivityInfoResponse,
-    AppContext,
     ChatRequest,
     ChatStreamResponse,
-    HRInfos,
     PaceResponse,
 )
+from stride.domain.types import HRInfos
+from stride.types import AppContext
 
 
 def get_router(ctx: AppContext) -> APIRouter:

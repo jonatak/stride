@@ -6,13 +6,13 @@ from fastmcp import FastMCP
 from fastmcp.server.http import StarletteWithLifespan
 
 from stride import domain
-from stride.types import (
+from stride.mcp.schemas import (
     ActivitiesResponse,
-    ActivityDetailsResponse,
-    AppContext,
-    HRInfos,
+    HRInfosResponse,
+    McpActivityResponse,
     PaceResponse,
 )
+from stride.types import AppContext
 
 
 def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
@@ -33,8 +33,8 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
         return PaceResponse(series=domain.generate_pace_series_monthly(ctx, start, end))
 
     @mcp.tool()
-    def get_hr_zones() -> HRInfos:
-        return domain.generate_hr_zone_infos()
+    def get_hr_zones() -> HRInfosResponse:
+        return HRInfosResponse(info=domain.generate_hr_zone_infos())
 
     @mcp.tool()
     def get_last_activities(days: int) -> ActivitiesResponse:
@@ -46,9 +46,27 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
         )
 
     @mcp.tool()
-    def get_activity_details(activity_id: int) -> ActivityDetailsResponse:
-        return ActivityDetailsResponse(
-            series=domain.generate_activity_details_serie(ctx, activity_id)
+    def get_activity_details_by_id(activity_id: int) -> McpActivityResponse | None:
+        info = domain.generate_activity_info_by_id(ctx, activity_id)
+        if not info:
+            return None
+        return McpActivityResponse(
+            info=info,
+            details=domain.generate_activity_details_serie(ctx, activity_id),
+        )
+
+    @mcp.tool()
+    def get_activity_details_by_date(
+        year: int, month: int, day: int
+    ) -> McpActivityResponse | None:
+        start = date(year, month, day)
+        end = date(year, month, day + 1)
+        data = domain.generate_activities_infos(ctx, start, end)
+        if len(data) == 0:
+            return None
+        return McpActivityResponse(
+            info=data[0],
+            details=domain.generate_activity_details_serie(ctx, data[0].activity_id),
         )
 
     @mcp.tool
