@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from stride.domain.types import (
     ActivityInfo,
     ActivityPoint,
+    BodyComposition,
     HRInfos,
     PaceStats,
     VO2MaxPoint,
@@ -41,3 +42,7 @@ class VO2MaxResponse(BaseModel):
 
 class HRInfosResponse(BaseModel):
     info: HRInfos
+
+
+class BodyCompositionResponse(BaseModel):
+    series: list[BodyComposition]

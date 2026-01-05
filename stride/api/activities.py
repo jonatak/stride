@@ -8,6 +8,7 @@ from stride.api.schemas import (
     ActivitiesResponse,
     ActivityDetailsResponse,
     ActivityInfoResponse,
+    BodyCompositionResponse,
     HRInfosResponse,
     PaceResponse,
     VO2MaxResponse,
@@ -54,6 +55,12 @@ def get_main_router(ctx: AppContext) -> APIRouter:
     def vo2max(start: date, end: date) -> VO2MaxResponse:
         return VO2MaxResponse(
             series=domain.generate_vo2_max_monthly_series(ctx, start, end)
+        )
+
+    @router.get("/bodycomposition/daily")
+    def body_composition(start: date, end: date) -> BodyCompositionResponse:
+        return BodyCompositionResponse(
+            series=domain.generate_body_composition_daily_series(ctx, start, end)
         )
 
     return router

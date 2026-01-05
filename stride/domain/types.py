@@ -77,3 +77,8 @@ class ActivityPoint(BaseModel):
 class VO2MaxPoint(BaseModel):
     period_start: date
     vo2_max: float
+
+
+class BodyComposition(BaseModel):
+    period_start: date
+    weight: float

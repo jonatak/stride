@@ -3,8 +3,8 @@ from datetime import date
 
 import polars as pl
 
-from stride.domain.dao import get_vo2_max_series
-from stride.domain.types import HRInfos, HRZone, VO2MaxPoint
+from stride.domain.dao import get_vo2_max_series, get_weight_series
+from stride.domain.types import BodyComposition, HRInfos, HRZone, VO2MaxPoint
 from stride.types import AppContext
 
 ZONE_PCTS: list[tuple[float, float]] = [
@@ -63,3 +63,23 @@ def generate_vo2_max_monthly_series(
     )
     result = df.to_dicts()
     return [VO2MaxPoint(**i) for i in result]
+
+
+def generate_body_composition_daily_series(
+    ctx: AppContext, start: date, end: date
+) -> list[BodyComposition]:
+    series = get_weight_series(ctx.influx_conn, start, end)
+    flatten_serie = [a for i in series for a in i]
+    if not flatten_serie:
+        return []
+
+    df = pl.DataFrame(flatten_serie)
+    df = df.drop_nulls(subset=["weight"]).with_columns(
+        pl.col("time")
+        .str.to_datetime("%Y-%m-%dT%H:%M:%SZ")
+        .dt.strftime("%Y-%m-%d")
+        .alias("period_start"),
+        pl.col("weight").round(2).alias("weight"),
+    )
+    result = df.to_dicts()
+    return [BodyComposition(**i) for i in result]

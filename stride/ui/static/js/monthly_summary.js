@@ -119,9 +119,23 @@ if (rangeSelect) {
     return payload.series ?? payload;
   }
 
+  async function loadBodyComposition(range) {
+    const url = `/api/bodycomposition/daily?start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Body composition API error ${resp.status}: ${txt}`);
+    }
+
+    const payload = await resp.json();
+    return payload.series ?? payload;
+  }
+
   let paceChartInstance = null;
   let combinedChartInstance = null;
   let vo2MaxChartInstance = null;
+  let weightChartInstance = null;
 
   function renderPaceChart(series) {
     const labels = series.map(r => r.period_start);
@@ -369,6 +383,12 @@ if (rangeSelect) {
           intersect: false
         },
         scales: {
+          x: {
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 10
+            }
+          },
           y: {
             beginAtZero: false,
             title: {
@@ -386,21 +406,143 @@ if (rangeSelect) {
     });
   }
 
+  function renderWeightChart(series) {
+    const canvas = document.getElementById("weightChart");
+    const emptyMessage = document.getElementById("weightEmpty");
+    if (!canvas || !emptyMessage) return;
+
+    if (!Array.isArray(series) || series.length === 0) {
+      if (weightChartInstance) {
+        weightChartInstance.destroy();
+        weightChartInstance = null;
+      }
+      emptyMessage.textContent = "No weight data available for this range.";
+      return;
+    }
+
+    emptyMessage.textContent = "";
+
+    const parsed = series
+      .map((row) => {
+        const label = row.period_start ?? row.date ?? row.day ?? row.time;
+        const rawWeight =
+          row.weight ??
+          row.weight_kg ??
+          row.weightKg ??
+          row.body?.weight ??
+          row.body?.weight_kg ??
+          row.body?.weightKg;
+        const value = Number(rawWeight);
+        if (!label || !Number.isFinite(value)) return null;
+        return { label, value };
+      })
+      .filter(Boolean);
+
+    if (parsed.length === 0) {
+      if (weightChartInstance) {
+        weightChartInstance.destroy();
+        weightChartInstance = null;
+      }
+      emptyMessage.textContent = "No weight data available for this range.";
+      return;
+    }
+
+    const labels = parsed.map(r => r.label);
+    const values = parsed.map(r => r.value);
+
+    const ctx = canvas.getContext("2d");
+
+    if (weightChartInstance) {
+      weightChartInstance.destroy();
+    }
+
+    weightChartInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Weight",
+          data: values,
+          borderColor: "#f39c12",
+          backgroundColor: "rgba(243, 156, 18, 0.2)",
+          fill: true,
+          tension: 0.25,
+          pointRadius: 2,
+          pointHoverRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        interaction: {
+          mode: "index",
+          intersect: false
+        },
+        scales: {
+          x: {
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 10
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: "Weight (kg)"
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true
+          }
+        }
+      }
+    });
+  }
+
   async function refreshForRange(rangeKey) {
     const range = resolveRange(rangeKey);
     try {
-      const [monthlySeries, vo2Series] = await Promise.all([
+      const [monthlyResult, vo2Result, weightResult] = await Promise.allSettled([
         loadMonthly(range),
         loadVo2Max(range),
+        loadBodyComposition(range),
       ]);
-      renderPaceChart(monthlySeries);
-      renderCombinedChart(monthlySeries);
-      renderVo2MaxChart(vo2Series);
+
+      if (monthlyResult.status === "fulfilled") {
+        renderPaceChart(monthlyResult.value);
+        renderCombinedChart(monthlyResult.value);
+      } else {
+        throw monthlyResult.reason;
+      }
+
+      if (vo2Result.status === "fulfilled") {
+        renderVo2MaxChart(vo2Result.value);
+      } else {
+        const emptyMessage = document.getElementById("vo2maxEmpty");
+        if (emptyMessage) {
+          emptyMessage.textContent = "Unable to load VO2 Max data.";
+        }
+      }
+
+      if (weightResult.status === "fulfilled") {
+        renderWeightChart(weightResult.value);
+      } else {
+        const emptyMessage = document.getElementById("weightEmpty");
+        if (emptyMessage) {
+          emptyMessage.textContent = "Unable to load weight data.";
+        }
+      }
     } catch (err) {
       console.error(err);
       const emptyMessage = document.getElementById("vo2maxEmpty");
       if (emptyMessage) {
         emptyMessage.textContent = "Unable to load VO2 Max data.";
+      }
+      const weightMessage = document.getElementById("weightEmpty");
+      if (weightMessage) {
+        weightMessage.textContent = "Unable to load weight data.";
       }
     }
   }

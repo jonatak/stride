@@ -6,7 +6,11 @@ from .activities import (
     get_activity_details_series,
     get_activity_info,
 )
-from .health import generate_hr_zone_infos, generate_vo2_max_monthly_series
+from .health import (
+    generate_body_composition_daily_series,
+    generate_hr_zone_infos,
+    generate_vo2_max_monthly_series,
+)
 from .pace import (
     generate_pace_info_yearly,
     generate_pace_series_monthly,
@@ -25,4 +29,5 @@ __all__ = [
     "get_activity_info",
     "get_pace_series",
     "generate_vo2_max_monthly_series",
+    "generate_body_composition_daily_series",
 ]
