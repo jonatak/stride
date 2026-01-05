@@ -4,8 +4,8 @@ from typing import Literal
 
 import polars as pl
 
+from stride.dao.influx import get_pace_series
 from stride.domain.commons import _calculate_zones
-from stride.domain.dao import get_pace_series
 from stride.domain.types import PaceStats, ZonePct
 from stride.types import AppContext
 

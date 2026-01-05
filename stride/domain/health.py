@@ -3,7 +3,7 @@ from datetime import date
 
 import polars as pl
 
-from stride.domain.dao import get_vo2_max_series, get_weight_series
+from stride.dao.influx import get_vo2_max_series, get_weight_series
 from stride.domain.types import BodyComposition, HRInfos, HRZone, VO2MaxPoint
 from stride.types import AppContext
 

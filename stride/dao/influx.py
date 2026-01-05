@@ -89,19 +89,6 @@ GROUP BY time(1d) fill(null)
 """
 
 
-def init_connection(
-    host: str, port: int, user: str, password: str, db: str
-) -> InfluxDBClient:
-    client = InfluxDBClient(
-        host=host,
-        port=port,
-        username=user,
-        password=password,
-        database=db,
-    )
-    return client
-
-
 def get_pace_series(conn: InfluxDBClient, start: date, end: date):
     start_str = start.strftime("%Y-%m-%d")
     end_str = end.strftime("%Y-%m-%d")

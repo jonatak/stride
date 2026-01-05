@@ -3,10 +3,10 @@ import uvicorn
 from loguru import logger
 
 from stride.agent import build_agent
-from stride.app import create_fast_api_app
-from stride.domain.dao import init_connection
-from stride.logger import init_logger, init_logging_override
 from stride.agent.types import AgentContext
+from stride.app import create_fast_api_app
+from stride.dao.connections import init_influx_connection, init_postgres_connection
+from stride.logger import init_logger, init_logging_override
 from stride.types import AppContext
 
 
@@ -36,6 +36,7 @@ def cli(
 @click.option("--agent-base-url", envvar="AGENT_BASE_URL", required=True)
 @click.option("--agent-api-key", envvar="AGENT_API_KEY", required=True)
 @click.option("--mcp-url", envvar="MCP_URL", required=True)
+@click.option("--pg-conn-url", envvar="POSTGRES_URL", required=True)
 def api(
     host: str,
     port: int,
@@ -48,8 +49,9 @@ def api(
     agent_base_url: str,
     agent_api_key: str,
     mcp_url: str,
+    pg_conn_url: str,
 ):
-    influx_conn = init_connection(
+    influx_conn = init_influx_connection(
         host=influx_host,
         port=influx_port,
         user=influx_user,
@@ -66,8 +68,11 @@ def api(
 
     agent = build_agent(agent_ctx)
 
+    pg_pool = init_postgres_connection(pg_conn_url)
+
     ctx = AppContext(
         influx_conn=influx_conn,
+        pg_pool=pg_pool,
         agent=agent,
     )
 
