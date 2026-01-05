@@ -10,21 +10,7 @@ from stride.logger import init_logger, init_logging_override
 from stride.types import AppContext
 
 
-@click.group()
-@click.option(
-    "--log-level",
-    default="INFO",
-    type=click.Choice(["INFO", "ERROR", "DEBUG", "WARN"]),
-    help="Set the log level of the application.",
-)
-def cli(
-    log_level: str,
-):
-    init_logger(log_level)
-    init_logging_override()
-
-
-@cli.command()
+@click.command()
 @click.option("--host", envvar="STRIDE_HOST", default="0.0.0.0", help="Api host.")
 @click.option("--port", envvar="STRIDE_PORT", default=8080, help="Api port.")
 @click.option("--influx-host", envvar="INFLUX_HOST", required=True)
@@ -37,7 +23,13 @@ def cli(
 @click.option("--agent-api-key", envvar="AGENT_API_KEY", required=True)
 @click.option("--mcp-url", envvar="MCP_URL", required=True)
 @click.option("--pg-conn-url", envvar="POSTGRES_URL", required=True)
-def api(
+@click.option(
+    "--log-level",
+    default="INFO",
+    type=click.Choice(["INFO", "ERROR", "DEBUG", "WARN"]),
+    help="Set the log level of the application.",
+)
+def main(
     host: str,
     port: int,
     influx_host: str,
@@ -50,7 +42,10 @@ def api(
     agent_api_key: str,
     mcp_url: str,
     pg_conn_url: str,
+    log_level: str,
 ):
+    init_logger(log_level)
+    init_logging_override()
     influx_conn = init_influx_connection(
         host=influx_host,
         port=influx_port,
@@ -83,8 +78,10 @@ def api(
         app,
         host=host,
         port=port,
+        log_config=None,
+        log_level=None,
     )
 
 
 if __name__ == "__main__":
-    cli()
+    main()

@@ -6,6 +6,13 @@ import sys
 
 from loguru import logger
 
+LOGURU_DEFAULT_FORMAT = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+    "<level>{level}</level> | "
+    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+    "<level>{message}</level>"
+)
+
 
 class InterceptHandler(logging.Handler):
     """Intercepter provided fron loguru documentation.
@@ -53,7 +60,7 @@ def init_logging_override():
 
 def init_logger(
     level: str = "INFO",
-    format: str = "{time:YYYY-MM-DDTHH:mm:ss}Z {level} {name}:{line} [{extra}] {message}",
+    format: str = LOGURU_DEFAULT_FORMAT,
 ):
     """init_logger initialise the global logger.
 
@@ -65,7 +72,7 @@ def init_logger(
     logger.configure(
         handlers=[
             {
-                "sink": sys.stderr,
+                "sink": sys.stdout,
                 "format": format,
                 "level": level,
                 "serialize": False,
