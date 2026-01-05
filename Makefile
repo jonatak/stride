@@ -1,6 +1,7 @@
 # Colors
 _CYAN=\033[0;36m
 _END=\033[0m
+STEPS ?= 2
 
 .check-uv:
 	@command -v uv >/dev/null 2>&1 || { \
@@ -28,3 +29,39 @@ test:					## run test
 
 help:					## display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(_CYAN)%-30s$(_END) %s\n", $$1, $$2}'
+
+db-init-migrate:
+	@docker run --rm \
+		-v $(PWD)/migrations:/migrations \
+		--network host \
+		migrate/migrate \
+		-path=/migrations \
+		-database "$(POSTGRES_URL)" \
+		up
+
+db-migrate-up:
+	@docker run --rm \
+		-v $(PWD)/migrations:/migrations \
+		--network host \
+		migrate/migrate \
+		-path=/migrations \
+		-database "$(POSTGRES_URL)" \
+		up $(STEPS)
+
+db-migrate-down:
+	@docker run --rm \
+		-v $(PWD)/migrations:/migrations \
+		--network host \
+		migrate/migrate \
+		-path=/migrations \
+		-database "$(POSTGRES_URL)" \
+		down $(STEPS)
+
+db-migrate-status:
+	@docker run --rm \
+		-v $(PWD)/migrations:/migrations \
+		--network host \
+		migrate/migrate \
+		-path=/migrations \
+		-database "$(POSTGRES_URL)" \
+		version
