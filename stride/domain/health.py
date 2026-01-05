@@ -41,7 +41,7 @@ def generate_hr_zone_infos() -> HRInfos:
     )
 
 
-def generate_vo2_max_monthly_series(
+def generate_vo2_max_daily_series(
     ctx: AppContext, start: date, end: date
 ) -> list[VO2MaxPoint]:
     series = get_vo2_max_series(ctx.influx_conn, start, end)

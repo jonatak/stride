@@ -8,9 +8,11 @@ from fastmcp.server.http import StarletteWithLifespan
 from stride import domain
 from stride.mcp.schemas import (
     ActivitiesResponse,
+    ActivityResponse,
+    BodyCompositionResponse,
     HRInfosResponse,
-    McpActivityResponse,
     PaceResponse,
+    VO2MaxResponse,
 )
 from stride.types import AppContext
 
@@ -46,11 +48,11 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
         )
 
     @mcp.tool()
-    def get_activity_details_by_id(activity_id: int) -> McpActivityResponse | None:
+    def get_activity_details_by_id(activity_id: int) -> ActivityResponse | None:
         info = domain.generate_activity_info_by_id(ctx, activity_id)
         if not info:
             return None
-        return McpActivityResponse(
+        return ActivityResponse(
             info=info,
             details=domain.generate_activity_details_serie(ctx, activity_id),
         )
@@ -58,13 +60,13 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
     @mcp.tool()
     def get_activity_details_by_date(
         year: int, month: int, day: int
-    ) -> McpActivityResponse | None:
+    ) -> ActivityResponse | None:
         start = date(year, month, day)
         end = date(year, month, day + 1)
         data = domain.generate_activities_infos(ctx, start, end)
         if len(data) == 0:
             return None
-        return McpActivityResponse(
+        return ActivityResponse(
             info=data[0],
             details=domain.generate_activity_details_serie(ctx, data[0].activity_id),
         )
@@ -79,5 +81,23 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
             "paris": now_paris.isoformat(),
             "date_paris": now_paris.date().isoformat(),
         }
+
+    @mcp.tool()
+    def get_vo2max_trend(past_days: int) -> VO2MaxResponse:
+        end = date.today() + timedelta(days=1)
+        start = (date.today() - timedelta(days=past_days)).replace(day=1)
+
+        return VO2MaxResponse(
+            series=domain.generate_vo2_max_daily_series(ctx, start, end)
+        )
+
+    @mcp.tool()
+    def get_body_composition_trend(past_days: int) -> BodyCompositionResponse:
+        end = date.today() + timedelta(days=1)
+        start = (date.today() - timedelta(days=past_days)).replace(day=1)
+
+        return BodyCompositionResponse(
+            series=domain.generate_body_composition_daily_series(ctx, start, end)
+        )
 
     return mcp.http_app(path="/", transport="streamable-http")

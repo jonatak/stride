@@ -54,7 +54,7 @@ def get_main_router(ctx: AppContext) -> APIRouter:
     @router.get("/vo2max")
     def vo2max(start: date, end: date) -> VO2MaxResponse:
         return VO2MaxResponse(
-            series=domain.generate_vo2_max_monthly_series(ctx, start, end)
+            series=domain.generate_vo2_max_daily_series(ctx, start, end)
         )
 
     @router.get("/bodycomposition/daily")
