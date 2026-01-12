@@ -67,3 +67,6 @@ db-migrate-status:
 		-path=/migrations \
 		-database "$(POSTGRES_URL)" \
 		version
+
+mcp-inspector:
+	@DANGEROUSLY_OMIT_AUTH=true mcp-inspector ${MCP_URL}
