@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 from stride.domain.types import (
@@ -12,12 +14,6 @@ from stride.domain.types import (
 
 class ChatRequest(BaseModel):
     message: str
-
-
-class ChatStreamResponse(BaseModel):
-    delta: str = ""
-    done: bool = False
-    error: str = ""
 
 
 class PaceResponse(BaseModel):
