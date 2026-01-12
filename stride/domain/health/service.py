@@ -3,8 +3,8 @@ from datetime import date
 
 import polars as pl
 
-from stride.dao.influx import get_vo2_max_series, get_weight_series
-from stride.domain.types import BodyComposition, HRInfos, HRZone, VO2MaxPoint
+from stride.domain.health.dao import get_vo2_max_series, get_weight_series
+from stride.domain.health.schemas import BodyComposition, HRInfos, HRZone, VO2MaxPoint
 from stride.types import AppContext
 
 ZONE_PCTS: list[tuple[float, float]] = [

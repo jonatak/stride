@@ -1,13 +1,8 @@
 from pydantic import BaseModel
 
-from stride.domain.types import (
-    ActivityInfo,
-    ActivityPoint,
-    BodyComposition,
-    HRInfos,
-    PaceStats,
-    VO2MaxPoint,
-)
+from stride.domain.activities.schemas import ActivityInfo, ActivityPoint
+from stride.domain.health.schemas import BodyComposition, HRInfos, VO2MaxPoint
+from stride.domain.pace.schemas import PaceStats
 
 
 class PaceResponse(BaseModel):

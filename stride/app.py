@@ -4,8 +4,11 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from stride.api import get_chat_router, get_main_router
-from stride.dao.connections import create_fast_api_lifespan
+from stride.domain.activities.api import get_activities_router
+from stride.domain.chat.api import get_chat_router
+from stride.domain.health.api import get_health_router
+from stride.infra.postgres import create_fast_api_lifespan
+from stride.domain.pace.api import get_pace_router
 from stride.mcp import get_mcp_router
 from stride.types import AppContext
 from stride.ui import get_ui_router
@@ -33,7 +36,9 @@ def create_fast_api_app(ctx: AppContext) -> FastAPI:
         version="0.1.0",
         lifespan=create_combine_lifespan_fn(mcp_app.lifespan, app_lifespan),
     )
-    app.include_router(get_main_router(ctx), prefix="/api")
+    app.include_router(get_activities_router(ctx), prefix="/api")
+    app.include_router(get_pace_router(ctx), prefix="/api")
+    app.include_router(get_health_router(ctx), prefix="/api")
     app.include_router(get_chat_router(ctx), prefix="/coach")
     app.include_router(get_ui_router(ctx), prefix="/ui")
 

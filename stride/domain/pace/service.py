@@ -4,12 +4,13 @@ from typing import Literal
 
 import polars as pl
 
-from stride.dao.influx import get_pace_series
-from stride.domain.commons import _calculate_zones
-from stride.domain.types import PaceStats, ZonePct
+from stride.domain.common.schemas import ZonePct
+from stride.domain.common.zone_utils import _calculate_zones
+from stride.domain.pace.dao import get_pace_series
+from stride.domain.pace.schemas import PaceStats
 from stride.types import AppContext
 
-from .health import generate_hr_zone_infos
+from stride.domain.health.service import generate_hr_zone_infos
 
 
 def _prepare_columns_for_agg(ctx: AppContext, df: pl.DataFrame) -> pl.DataFrame:

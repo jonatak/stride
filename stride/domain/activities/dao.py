@@ -2,16 +2,6 @@ from datetime import date
 
 from influxdb import InfluxDBClient
 
-PACE_QUERY = """
-SELECT last("DurationSeconds") as duration_s, mean("HeartRate") as hr, last("Distance") as distance_m, last("Activity_ID") as activity_id
-FROM "ActivityGPS"
-WHERE
-  time >= '{start}'
-  AND time <= '{end}'
-  AND ("ActivitySelector"::tag =~ /-running$/)
-GROUP BY time(1m), "ActivityID" fill(none)
-"""
-
 ACTIVITIES_QUERY = """
 SELECT
         "ActivityID" as activity_id,
@@ -70,38 +60,11 @@ WHERE
 LIMIT 1
 """
 
-VO2_MAX_QUERY = """
-SELECT mean("VO2_max_value") as vo2_max
-FROM "VO2_Max"
-WHERE
-  time >= '{start}'
-  AND time <= '{end}'
-GROUP BY time(1d) fill(null)
-"""
-
-WEIGHT_QUERY = """
-SELECT (mean("weight")/ 1000) as weight
-FROM "BodyComposition"
-WHERE
-  time >= '{start}'
-  AND time <= '{end}'
-GROUP BY time(1d) fill(null)
-"""
-
-
-def get_pace_series(conn: InfluxDBClient, start: date, end: date):
-    start_str = start.strftime("%Y-%m-%d")
-    end_str = end.strftime("%Y-%m-%d")
-    query = PACE_QUERY.format(start=start_str, end=end_str)
-
-    return list(conn.query(query))
-
 
 def get_activities_series(conn: InfluxDBClient, start: date, end: date):
     start_str = start.strftime("%Y-%m-%d")
     end_str = end.strftime("%Y-%m-%d")
     query = ACTIVITIES_QUERY.format(start=start_str, end=end_str)
-
     return list(conn.query(query))
 
 
@@ -112,20 +75,4 @@ def get_activity_details_series(conn: InfluxDBClient, activity_id: int):
 
 def get_activity_info(conn: InfluxDBClient, activity_id: int):
     query = ACTIVITY_INFO_QUERY.format(activity_id=activity_id)
-    return list(conn.query(query))
-
-
-def get_vo2_max_series(conn: InfluxDBClient, start: date, end: date):
-    start_str = start.strftime("%Y-%m-%d")
-    end_str = end.strftime("%Y-%m-%d")
-    query = VO2_MAX_QUERY.format(start=start_str, end=end_str)
-
-    return list(conn.query(query))
-
-
-def get_weight_series(conn: InfluxDBClient, start: date, end: date):
-    start_str = start.strftime("%Y-%m-%d")
-    end_str = end.strftime("%Y-%m-%d")
-    query = WEIGHT_QUERY.format(start=start_str, end=end_str)
-
     return list(conn.query(query))

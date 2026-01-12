@@ -1,11 +1,8 @@
-import asyncio
-from typing import AsyncIterator
-
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from stride.api.schemas import ChatRequest
-from stride.domain.chat import stream_chat, sync_chat
+from stride.domain.chat.schemas import ChatRequest
+from stride.domain.chat.service import stream_chat, sync_chat
 from stride.types import AppContext
 
 

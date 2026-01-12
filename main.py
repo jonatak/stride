@@ -5,7 +5,8 @@ from loguru import logger
 from stride.agent import build_agent
 from stride.agent.types import AgentContext
 from stride.app import create_fast_api_app
-from stride.dao.connections import init_influx_connection, init_postgres_connection
+from stride.infra.influx import init_influx_connection
+from stride.infra.postgres import init_postgres_connection
 from stride.logger import init_logger, init_logging_override
 from stride.types import AppContext
 

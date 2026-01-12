@@ -5,7 +5,6 @@ from dateutil.relativedelta import relativedelta
 from fastmcp import FastMCP
 from fastmcp.server.http import StarletteWithLifespan
 
-from stride import domain
 from stride.mcp.schemas import (
     ActivitiesResponse,
     ActivityResponse,
@@ -14,6 +13,17 @@ from stride.mcp.schemas import (
     PaceResponse,
     VO2MaxResponse,
 )
+from stride.domain.activities.service import (
+    generate_activities_infos,
+    generate_activity_details_serie,
+    generate_activity_info_by_id,
+)
+from stride.domain.health.service import (
+    generate_body_composition_daily_series,
+    generate_hr_zone_infos,
+    generate_vo2_max_daily_series,
+)
+from stride.domain.pace.service import generate_pace_series_monthly
 from stride.types import AppContext
 
 
@@ -24,11 +34,11 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
     def get_last_n_monthly_summaries(months: int) -> PaceResponse:
         end = date.today() + timedelta(days=1)
         start = date.today() - relativedelta(months=months)
-        return PaceResponse(series=domain.generate_pace_series_monthly(ctx, start, end))
+        return PaceResponse(series=generate_pace_series_monthly(ctx, start, end))
 
     @mcp.tool()
     def get_hr_zones() -> HRInfosResponse:
-        return HRInfosResponse(info=domain.generate_hr_zone_infos())
+        return HRInfosResponse(info=generate_hr_zone_infos())
 
     @mcp.tool()
     def get_last_activities(days: int) -> ActivitiesResponse:
@@ -36,17 +46,17 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
         start = (date.today() - timedelta(days=days)).replace(day=1)
 
         return ActivitiesResponse(
-            series=domain.generate_activities_infos(ctx, start, end)
+            series=generate_activities_infos(ctx, start, end)
         )
 
     @mcp.tool()
     def get_activity_details_by_id(activity_id: int) -> ActivityResponse | None:
-        info = domain.generate_activity_info_by_id(ctx, activity_id)
+        info = generate_activity_info_by_id(ctx, activity_id)
         if not info:
             return None
         return ActivityResponse(
             info=info,
-            details=domain.generate_activity_details_serie(ctx, activity_id),
+            details=generate_activity_details_serie(ctx, activity_id),
         )
 
     @mcp.tool()
@@ -55,12 +65,12 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
     ) -> ActivityResponse | None:
         start = date(year, month, day)
         end = date(year, month, day + 1)
-        data = domain.generate_activities_infos(ctx, start, end)
+        data = generate_activities_infos(ctx, start, end)
         if len(data) == 0:
             return None
         return ActivityResponse(
             info=data[0],
-            details=domain.generate_activity_details_serie(ctx, data[0].activity_id),
+            details=generate_activity_details_serie(ctx, data[0].activity_id),
         )
 
     @mcp.tool
@@ -80,7 +90,7 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
         start = (date.today() - timedelta(days=past_days)).replace(day=1)
 
         return VO2MaxResponse(
-            series=domain.generate_vo2_max_daily_series(ctx, start, end)
+            series=generate_vo2_max_daily_series(ctx, start, end)
         )
 
     @mcp.tool()
@@ -89,7 +99,7 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
         start = (date.today() - timedelta(days=past_days)).replace(day=1)
 
         return BodyCompositionResponse(
-            series=domain.generate_body_composition_daily_series(ctx, start, end)
+            series=generate_body_composition_daily_series(ctx, start, end)
         )
 
     return mcp.http_app(path="/", transport="streamable-http")

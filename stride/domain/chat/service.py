@@ -1,10 +1,6 @@
 import asyncio
-from typing import AsyncIterator
-from uuid import UUID
 
-from pydantic_ai import ModelMessage
-
-from stride.dao.postgres import get_history, insert_message
+from stride.domain.chat.dao import get_history, insert_message
 from stride.types import AppContext
 
 from .schemas import ChatStreamResponse

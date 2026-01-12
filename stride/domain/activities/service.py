@@ -2,13 +2,14 @@ from datetime import date
 
 import polars as pl
 
-from stride.dao.influx import (
+from stride.domain.activities.dao import (
     get_activities_series,
     get_activity_details_series,
     get_activity_info,
 )
-from stride.domain.commons import _calculate_zones
-from stride.domain.types import ActivityInfo, ActivityPoint, ZonePct
+from stride.domain.activities.schemas import ActivityInfo, ActivityPoint
+from stride.domain.common.schemas import ZonePct
+from stride.domain.common.zone_utils import _calculate_zones
 from stride.types import AppContext
 
 
