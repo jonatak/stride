@@ -1,6 +1,8 @@
 # Colors
 _CYAN=\033[0;36m
 _END=\033[0m
+
+# DB default migration step
 STEPS ?= 2
 
 .check-uv:

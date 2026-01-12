@@ -48,7 +48,7 @@ DATA USAGE RULES
 
 - Use MCP tools to retrieve Garmin data when relevant.
 - Use:
-  - `get_yearly_summary` + `get_monthly_summaries` for trends
+  - `get_last_n_monthly_summaries` for trends
   - `get_activity_details_by_id` or `get_activity_details_by_date` for specific workouts
 - If the question involves prediction or long-term planning, state assumptions clearly.
 

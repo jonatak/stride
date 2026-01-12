@@ -21,14 +21,6 @@ def get_mcp_router(ctx: AppContext) -> StarletteWithLifespan:
     mcp = FastMCP("Stride MCP Server")
 
     @mcp.tool()
-    def get_yearly_summary(year: int) -> PaceResponse:
-        return PaceResponse(series=domain.generate_pace_info_yearly(ctx, year))
-
-    @mcp.tool()
-    def get_monthly_summaries(start: date, end: date) -> PaceResponse:
-        return PaceResponse(series=domain.generate_pace_series_monthly(ctx, start, end))
-
-    @mcp.tool()
     def get_last_n_monthly_summaries(months: int) -> PaceResponse:
         end = date.today() + timedelta(days=1)
         start = date.today() - relativedelta(months=months)
