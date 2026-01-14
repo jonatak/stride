@@ -3,7 +3,7 @@ _CYAN=\033[0;36m
 _END=\033[0m
 
 # DB default migration step
-STEPS ?= 2
+STEPS ?= 1
 
 .check-uv:
 	@command -v uv >/dev/null 2>&1 || { \
