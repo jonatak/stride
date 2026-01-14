@@ -1,19 +1,25 @@
 import asyncio
 
+from fastapi import BackgroundTasks
+
 from stride.domain.chat.dao import get_history, insert_message
 from stride.types import AppContext
 
 from .schemas import ChatStreamResponse
+from .tasks import messages_summary
 
 
-async def sync_chat(ctx: AppContext, message: str):
+async def sync_chat(ctx: AppContext, background_task: BackgroundTasks, message: str):
     assert ctx.agent
     async with ctx.pg_pool.connection() as conn:
         history = await get_history(conn)
         async with ctx.agent:
             result = await ctx.agent.run(message, message_history=history)
             messages = result.new_messages()
-            await insert_message(conn, messages=messages)
+            message_id = await insert_message(conn, messages=messages)
+            background_task.add_task(
+                messages_summary, ctx, message_id, result.all_messages()
+            )
             return result.output
 
 
@@ -26,7 +32,7 @@ def sse_ping() -> str:
     return ": ping\n\n"
 
 
-async def stream_chat(ctx: AppContext, message: str):
+async def stream_chat(ctx: AppContext, background_task: BackgroundTasks, message: str):
     assert ctx.agent is not None
 
     HEARTBEAT_SECONDS = 1
@@ -52,7 +58,10 @@ async def stream_chat(ctx: AppContext, message: str):
                             continue
                         except StopAsyncIteration:
                             break
-                    await insert_message(conn, result.new_messages())
+                    message_id = await insert_message(conn, result.new_messages())
+                    background_task.add_task(
+                        messages_summary, ctx, message_id, result.all_messages()
+                    )
 
                     yield sse_data(ChatStreamResponse(done=True))
 

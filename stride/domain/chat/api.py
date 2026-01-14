@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from fastapi.responses import StreamingResponse
 
 from stride.domain.chat.schemas import ChatRequest
@@ -10,13 +10,13 @@ def get_chat_router(ctx: AppContext) -> APIRouter:
     router = APIRouter()
 
     @router.post("/message")
-    async def chat_simple(payload: ChatRequest):
-        return await sync_chat(ctx, payload.message)
+    async def chat_simple(payload: ChatRequest, background_tasks: BackgroundTasks):
+        return await sync_chat(ctx, background_tasks, payload.message)
 
     @router.post("/stream")
-    async def chat(payload: ChatRequest):
+    async def chat(payload: ChatRequest, background_tasks: BackgroundTasks):
         return StreamingResponse(
-            stream_chat(ctx, payload.message),
+            stream_chat(ctx, background_tasks, payload.message),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",

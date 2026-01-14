@@ -9,4 +9,5 @@ from pydantic_ai import Agent
 class AppContext:
     influx_conn: InfluxDBClient
     pg_pool: AsyncConnectionPool
-    agent: Agent | None = None
+    agent: Agent
+    summary_agent: Agent
