@@ -9,7 +9,7 @@ class PaceResponse(BaseModel):
     series: list[PaceStats]
 
 
-class ActivitiesResponse(BaseModel):
+class WorkoutsResponse(BaseModel):
     series: list[ActivityInfo]
 
 
@@ -29,7 +29,7 @@ class HRInfosResponse(BaseModel):
     info: HRInfos
 
 
-class ActivityResponse(BaseModel):
+class WorkoutDetailsResponse(BaseModel):
     info: ActivityInfo
     details: list[ActivityPoint]
 

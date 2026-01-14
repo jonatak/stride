@@ -39,7 +39,6 @@ async def stream_chat(ctx: AppContext, message: str):
                 ) as result:
                     stream = result.stream_text(delta=True)
                     aiter = stream.__aiter__()
-
                     while True:
                         try:
                             # wait for next token, but don't block forever

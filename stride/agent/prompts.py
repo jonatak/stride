@@ -48,8 +48,10 @@ DATA USAGE RULES
 
 - Use MCP tools to retrieve Garmin data when relevant.
 - Use:
-  - `get_last_n_monthly_summaries` for trends
-  - `get_activity_details_by_id` or `get_activity_details_by_date` for specific workouts
+  - `get_workouts_monthly_summary` or `get_workouts_weekly_summary` for trends
+  - `get_workout_details_by_id` or `get_workout_details_by_date` for specific workouts
+  - `get_last_workouts` for the last workout of the past N days
+  - `get_vo2max_trend` and `get_body_composition_trend` for the user body metrics
 - If the question involves prediction or long-term planning, state assumptions clearly.
 
 ========================

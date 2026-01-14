@@ -6,11 +6,10 @@ import polars as pl
 
 from stride.domain.common.schemas import ZonePct
 from stride.domain.common.zone_utils import _calculate_zones
+from stride.domain.health.service import generate_hr_zone_infos
 from stride.domain.pace.dao import get_pace_series
 from stride.domain.pace.schemas import PaceStats
 from stride.types import AppContext
-
-from stride.domain.health.service import generate_hr_zone_infos
 
 
 def _prepare_columns_for_agg(ctx: AppContext, df: pl.DataFrame) -> pl.DataFrame:
@@ -76,7 +75,7 @@ def _agg_dataframe(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _format_individual_pace_stats(
-    stat: dict, dimension: Literal["yearly", "monthly"]
+    stat: dict, dimension: Literal["yearly", "monthly", "weekly"]
 ) -> PaceStats:
     match dimension:
         case "monthly":
@@ -85,6 +84,8 @@ def _format_individual_pace_stats(
         case "yearly":
             period_start = stat["period_start"]
             period_start = f"{period_start}-01-01"
+        case "weekly":
+            period_start = stat["period_start"]
 
     s_per_km = int(round(stat["s_per_km"]))
     mn, s = divmod(s_per_km, 60)
@@ -127,6 +128,36 @@ def generate_pace_series_monthly(
     )
     result = df.to_dicts()
     return [_format_individual_pace_stats(i, "monthly") for i in result]
+
+
+def generate_pace_series_weekly(
+    ctx: AppContext, start: date, end: date
+) -> list[PaceStats]:
+    series = get_pace_series(ctx.influx_conn, start, end)
+    flatten_serie = [a for i in series for a in i]
+    if not flatten_serie:
+        return []
+
+    df = pl.DataFrame(flatten_serie)
+
+    df = (
+        df.pipe(partial(_prepare_columns_for_agg, ctx))
+        .with_columns(
+            pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M:%SZ").alias("period_start")
+        )
+        .with_columns(
+            # ISO weekday: Monday=1 ... Sunday=7
+            (
+                pl.col("period_start")
+                - pl.duration(days=pl.col("period_start").dt.weekday() - 1)
+            )
+            .dt.strftime("%Y-%m-%d")
+            .alias("period_start")
+        )
+        .pipe(_agg_dataframe)
+    )
+    result = df.to_dicts()
+    return [_format_individual_pace_stats(i, "weekly") for i in result]
 
 
 def generate_pace_info_yearly(ctx: AppContext, year: int) -> list[PaceStats]:
